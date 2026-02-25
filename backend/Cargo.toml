@@ -1,0 +1,54 @@
+[package]
+name = "rice"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Web framework
+axum = { version = "0.8", features = ["macros", "multipart"] }
+tokio = { version = "1", features = ["full"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors", "fs", "trace", "set-header"] }
+
+# Database
+sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite", "migrate"] }
+
+# Auth
+jsonwebtoken = "9"
+oauth2 = "5"
+reqwest = { version = "0.12", features = ["json"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# IDs + crypto
+ulid = { version = "1", features = ["serde"] }
+sha2 = "0.10"
+hex = "0.4"
+rand = "0.8"
+base64 = "0.22"
+
+# Email
+lettre = { version = "0.11", default-features = false, features = ["tokio1-rustls-tls", "smtp-transport", "builder"] }
+
+# Config + logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Time
+chrono = { version = "0.4", features = ["serde"] }
+
+# Static file embedding
+rust-embed = "8"
+mime_guess = "2"
+
+# Cookie handling
+cookie = "0.18"
+
+# In-memory state for PKCE
+lazy_static = "1"
+
+[dev-dependencies]
+axum-test = "16"
+tempfile = "3"
