@@ -1,0 +1,74 @@
+/* DashboardPage — Trip listing page */
+
+/* ---- Empty state ---- */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-20) var(--space-6);
+  gap: var(--space-4);
+}
+
+/* Large decorative kanji behind heading — purely visual */
+.emptyKanji {
+  font-size: 7rem;
+  line-height: 1;
+  /* Translucent so it reads as ambient texture, not primary content */
+  color: var(--color-neon-primary);
+  opacity: 0.08;
+  font-family: 'Noto Sans JP', sans-serif;
+  font-weight: 900;
+  /* Slightly offset to act as a watermark */
+  margin-bottom: calc(-1 * var(--space-10));
+  pointer-events: none;
+  user-select: none;
+}
+
+.emptyHeading {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  letter-spacing: var(--tracking-tight);
+  font-family: 'Noto Sans JP', var(--font-sans);
+  /* Sits above the ghost kanji */
+  position: relative;
+}
+
+.emptySubtext {
+  font-size: var(--text-base);
+  color: var(--color-text-secondary);
+  max-width: 280px;
+  line-height: var(--leading-normal);
+  margin-bottom: var(--space-2);
+}
+
+/* ---- Error state ---- */
+.errorState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-16) var(--space-6);
+  gap: var(--space-3);
+}
+
+.errorIcon {
+  font-size: var(--text-xl);
+  color: var(--color-neon-red);
+  /* Subtle neon glow on the warning icon */
+  filter: drop-shadow(0 0 8px rgba(255, 45, 85, 0.5));
+}
+
+.errorMessage {
+  font-size: var(--text-base);
+  color: var(--color-neon-red);
+  font-weight: 500;
+}
+
+.errorHint {
+  font-size: var(--text-sm);
+  color: var(--color-text-tertiary);
+}

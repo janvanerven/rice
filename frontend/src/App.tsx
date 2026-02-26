@@ -3,6 +3,7 @@ import { useState, useEffect, createContext, useContext } from 'react'
 import type { User } from './types'
 import { api } from './lib/api'
 import LoginPage from './pages/LoginPage'
+import DashboardPage from './pages/DashboardPage'
 
 interface AuthContextType {
   user: User | null
@@ -75,7 +76,7 @@ export default function App() {
             path="/"
             element={
               <ProtectedRoute>
-                <Placeholder title="Dashboard" />
+                <DashboardPage />
               </ProtectedRoute>
             }
           />
