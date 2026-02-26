@@ -1,6 +1,8 @@
+mod auth;
 mod config;
 mod db;
 mod errors;
+mod extractors;
 mod models;
 
 use config::Config;
@@ -47,6 +49,7 @@ async fn main() {
 
     let app = axum::Router::new()
         .route("/health", axum::routing::get(health))
+        .merge(auth::router())
         .with_state(state);
 
     axum::serve(listener, app).await.expect("Server failed");
