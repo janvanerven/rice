@@ -4,6 +4,8 @@ import type { User } from './types'
 import { api } from './lib/api'
 import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
+import TripNewPage from './pages/TripNewPage'
+import TripDetailPage from './pages/TripDetailPage'
 
 interface AuthContextType {
   user: User | null
@@ -57,14 +59,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
-function Placeholder({ title }: { title: string }) {
-  return (
-    <div style={{ padding: 'var(--space-10)', color: 'var(--color-text-primary)' }}>
-      <h1>{title}</h1>
-      <p style={{ color: 'var(--color-text-secondary)' }}>Coming soon</p>
-    </div>
-  )
-}
 
 export default function App() {
   return (
@@ -84,7 +78,7 @@ export default function App() {
             path="/trips/new"
             element={
               <ProtectedRoute>
-                <Placeholder title="New Trip" />
+                <TripNewPage />
               </ProtectedRoute>
             }
           />
@@ -92,7 +86,7 @@ export default function App() {
             path="/trips/:id"
             element={
               <ProtectedRoute>
-                <Placeholder title="Trip Detail" />
+                <TripDetailPage />
               </ProtectedRoute>
             }
           />

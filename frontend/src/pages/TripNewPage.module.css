@@ -1,0 +1,11 @@
+/* TripNewPage layout */
+
+.content {
+  padding: var(--space-6) var(--space-6) var(--space-10);
+}
+
+@media (min-width: 1024px) {
+  .content {
+    padding: var(--space-8) var(--space-8) var(--space-16);
+  }
+}
