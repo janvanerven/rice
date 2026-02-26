@@ -9,7 +9,7 @@ use axum::{
     Router,
 };
 use cookie::{Cookie, SameSite};
-use rand::Rng;
+use rand::RngCore;
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::sync::Mutex;
@@ -18,7 +18,7 @@ use crate::{errors::AppError, AppState};
 
 // In-memory store for PKCE verifiers + CSRF tokens (keyed by CSRF state)
 lazy_static::lazy_static! {
-    static ref PENDING_AUTH: Mutex<HashMap<String, oauth2::PkceCodeVerifier>> =
+    static ref PENDING_AUTH: Mutex<HashMap<String, (oauth2::PkceCodeVerifier, std::time::Instant)>> =
         Mutex::new(HashMap::new());
 }
 
@@ -39,10 +39,12 @@ async fn login(State(state): State<AppState>) -> Result<Redirect, AppError> {
     let client = oauth::build_oauth_client(&state.config);
     let (auth_url, csrf_token, pkce_verifier) = oauth::generate_auth_url(&client);
 
-    PENDING_AUTH
-        .lock()
-        .unwrap()
-        .insert(csrf_token.secret().clone(), pkce_verifier);
+    {
+        let mut map = PENDING_AUTH.lock().unwrap();
+        let cutoff = std::time::Instant::now() - std::time::Duration::from_secs(600);
+        map.retain(|_, (_, inserted)| *inserted > cutoff);
+        map.insert(csrf_token.secret().clone(), (pkce_verifier, std::time::Instant::now()));
+    }
 
     Ok(Redirect::temporary(&auth_url))
 }
@@ -52,11 +54,11 @@ async fn callback(
     Query(params): Query<CallbackQuery>,
 ) -> Result<Response, AppError> {
     // Retrieve and remove PKCE verifier
-    let pkce_verifier = PENDING_AUTH
-        .lock()
-        .unwrap()
-        .remove(&params.state)
-        .ok_or_else(|| AppError::BadRequest("Invalid or expired auth state".into()))?;
+    let pkce_verifier = {
+        let mut map = PENDING_AUTH.lock().unwrap();
+        map.remove(&params.state).map(|(v, _)| v)
+    }
+    .ok_or_else(|| AppError::BadRequest("Invalid or expired auth state".into()))?;
 
     // Exchange code for access token
     let client = oauth::build_oauth_client(&state.config);
@@ -102,8 +104,8 @@ async fn callback(
     // Create session
     let session_id = ulid::Ulid::new().to_string();
     let refresh_token: String = {
-        let mut rng = rand::thread_rng();
-        let bytes: [u8; 32] = rng.gen();
+        let mut bytes = [0u8; 32];
+        rand::rngs::OsRng.fill_bytes(&mut bytes);
         hex::encode(bytes)
     };
     let refresh_hash = hex::encode(Sha256::digest(refresh_token.as_bytes()));
@@ -171,7 +173,7 @@ async fn logout(
                 if let Ok(c) = Cookie::parse(cookie_part) {
                     if c.name() == "rice_access" {
                         if let Ok(claims) =
-                            jwt::verify_token(c.value(), &state.config.jwt_secret)
+                            jwt::decode_ignoring_expiry(c.value(), &state.config.jwt_secret)
                         {
                             let _ = sqlx::query("DELETE FROM sessions WHERE id = ?1")
                                 .bind(&claims.jti)
@@ -225,20 +227,21 @@ async fn claim_pending_invites(
     .await?;
 
     for invite in invites {
-        let _ = sqlx::query(
+        let mut tx = state.db.write.begin().await?;
+        sqlx::query(
             "INSERT OR IGNORE INTO trip_members (trip_id, user_id, role) VALUES (?1, ?2, ?3)",
         )
         .bind(&invite.trip_id)
         .bind(user_id)
         .bind(&invite.role)
-        .execute(&state.db.write)
-        .await;
-
-        let _ = sqlx::query("UPDATE invites SET claimed_by = ?1 WHERE id = ?2")
+        .execute(&mut *tx)
+        .await?;
+        sqlx::query("UPDATE invites SET claimed_by = ?1 WHERE id = ?2")
             .bind(user_id)
             .bind(&invite.id)
-            .execute(&state.db.write)
-            .await;
+            .execute(&mut *tx)
+            .await?;
+        tx.commit().await?;
     }
 
     Ok(())
