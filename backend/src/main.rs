@@ -1,3 +1,4 @@
+mod api;
 mod auth;
 mod config;
 mod db;
@@ -50,6 +51,7 @@ async fn main() {
     let app = axum::Router::new()
         .route("/health", axum::routing::get(health))
         .merge(auth::router())
+        .merge(api::router())
         .with_state(state);
 
     axum::serve(listener, app).await.expect("Server failed");
