@@ -1,0 +1,82 @@
+/* Input — HUD-style terminal input with neon focus ring */
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* HUD mono label — like a system readout */
+.label {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-text-secondary);
+  line-height: 1;
+}
+
+.input {
+  width: 100%;
+
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  color: var(--color-text-primary);
+
+  background: var(--color-surface);
+
+  /* Understated at rest — just a bottom border, no radius */
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  border-radius: 0;
+
+  padding: var(--space-3) var(--space-1);
+
+  outline: none;
+
+  transition:
+    border var(--transition-fast),
+    border-radius var(--transition-fast),
+    box-shadow var(--transition-fast),
+    background-color var(--transition-fast);
+}
+
+.input::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+/* Focus: the input "activates" — gains full border, radius, and neon glow */
+.input:focus {
+  border: 1px solid var(--color-neon-primary);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-focus);
+  padding: calc(var(--space-3) - 1px) var(--space-2);
+  background: var(--color-surface-2);
+}
+
+/* Error state — red instead of orange */
+.input[data-error="true"] {
+  border-bottom-color: var(--color-neon-red);
+}
+
+.input[data-error="true"]:focus {
+  border-color: var(--color-neon-red);
+  box-shadow:
+    0 0 0 2px rgba(255, 45, 85, 0.4),
+    inset 0 0 12px rgba(255, 45, 85, 0.05);
+}
+
+/* Disabled */
+.input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Error message below the input */
+.error {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-neon-red);
+  letter-spacing: var(--tracking-normal);
+  line-height: 1.4;
+}

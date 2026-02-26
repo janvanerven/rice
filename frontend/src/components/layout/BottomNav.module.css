@@ -1,0 +1,99 @@
+/* BottomNav — Fixed bottom tab bar, mobile only */
+
+.nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  /* Frosted glass effect — surface color with blur */
+  background: rgba(15, 15, 24, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  /* iOS safe area — extra bottom padding on notched devices */
+  padding-bottom: var(--safe-bottom);
+  z-index: 100;
+}
+
+/* Tab base (works for both <NavLink> and <button>) */
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  flex: 1;
+  height: 100%;
+  /* Reset button defaults */
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  /* Link override — matches button treatment */
+  color: var(--color-text-tertiary);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tab:hover {
+  color: var(--color-text-secondary);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--color-neon-primary);
+  outline-offset: -2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Active tab — neon highlight */
+.tabActive {
+  color: var(--color-neon-primary);
+}
+
+.tabActive:hover {
+  color: var(--color-neon-primary);
+}
+
+.tabIcon {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.tabLabel {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  line-height: 1;
+}
+
+/* Avatar inside profile tab */
+.avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+  border: 1px solid var(--color-border-2);
+}
+
+.avatarFallback {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-3);
+  border: 1px solid var(--color-border-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-neon-primary);
+  line-height: 1;
+}

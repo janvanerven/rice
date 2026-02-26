@@ -1,0 +1,150 @@
+/* Button — Japanese cyberpunk, all variants and sizes */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+
+  font-family: var(--font-sans);
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  user-select: none;
+
+  /* GPU-accelerated transitions only */
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast),
+    background-color var(--transition-fast),
+    color var(--transition-fast),
+    opacity var(--transition-fast);
+}
+
+/* --- Sizes --- */
+
+.button[data-size="sm"] {
+  font-size: var(--text-sm);
+  padding: var(--space-2) var(--space-4);
+}
+
+.button[data-size="md"] {
+  font-size: var(--text-base);
+  padding: var(--space-3) var(--space-6);
+}
+
+.button[data-size="lg"] {
+  font-size: var(--text-md);
+  padding: var(--space-4) var(--space-8);
+}
+
+/* --- Primary --- */
+
+.button[data-variant="primary"] {
+  background: var(--color-neon-primary);
+  color: var(--color-text-inverse);
+  box-shadow: var(--shadow-sm);
+}
+
+.button[data-variant="primary"]:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow:
+    var(--shadow-md),
+    0 0 20px rgba(255, 107, 43, 0.45),
+    0 0 40px rgba(255, 107, 43, 0.15);
+  /* Brighter background on hover */
+  background: #ff7d45;
+}
+
+.button[data-variant="primary"]:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm), 0 0 8px rgba(255, 107, 43, 0.3);
+}
+
+.button[data-variant="primary"]:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus), 0 0 20px rgba(255, 107, 43, 0.4);
+}
+
+/* --- Secondary --- */
+
+.button[data-variant="secondary"] {
+  background: transparent;
+  border: 1px solid var(--color-neon-primary);
+  color: var(--color-neon-primary);
+}
+
+.button[data-variant="secondary"]:hover:not(:disabled) {
+  background: rgba(255, 107, 43, 0.08);
+  transform: translateY(-1px);
+  box-shadow: 0 0 12px rgba(255, 107, 43, 0.2);
+}
+
+.button[data-variant="secondary"]:active:not(:disabled) {
+  transform: translateY(0);
+  background: rgba(255, 107, 43, 0.12);
+}
+
+.button[data-variant="secondary"]:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+/* --- Ghost --- */
+
+.button[data-variant="ghost"] {
+  background: transparent;
+  color: var(--color-text-secondary);
+}
+
+.button[data-variant="ghost"]:hover:not(:disabled) {
+  background: var(--color-surface-2);
+  color: var(--color-text-primary);
+}
+
+.button[data-variant="ghost"]:active:not(:disabled) {
+  background: var(--color-surface-3);
+}
+
+.button[data-variant="ghost"]:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-border-2);
+}
+
+/* --- Danger --- */
+
+.button[data-variant="danger"] {
+  background: var(--color-neon-red);
+  color: #fff;
+  box-shadow: var(--shadow-sm);
+}
+
+.button[data-variant="danger"]:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow:
+    var(--shadow-md),
+    0 0 16px rgba(255, 45, 85, 0.4);
+  background: #ff4568;
+}
+
+.button[data-variant="danger"]:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm), 0 0 8px rgba(255, 45, 85, 0.3);
+}
+
+.button[data-variant="danger"]:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255, 45, 85, 0.5);
+}
+
+/* --- Disabled (all variants) --- */
+
+.button:disabled {
+  opacity: 0.5;
+  pointer-events: none;
+  cursor: not-allowed;
+}

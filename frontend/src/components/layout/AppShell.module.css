@@ -1,0 +1,21 @@
+/* AppShell — Root layout wrapper */
+
+.shell {
+  min-height: 100dvh;
+}
+
+/* Desktop: offset content by sidebar width */
+.mainDesktop {
+  margin-left: 200px;
+  padding: var(--space-8);
+  /* Ensure content doesn't collapse when sidebar is present */
+  min-width: 0;
+}
+
+/* Mobile: content fills full width with bottom nav clearance */
+.mainMobile {
+  padding: var(--space-4);
+  /* Clear the fixed bottom nav (56px) + safe area + comfortable breathing room */
+  padding-bottom: calc(56px + var(--safe-bottom) + var(--space-4));
+  min-width: 0;
+}

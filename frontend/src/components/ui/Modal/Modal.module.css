@@ -1,0 +1,163 @@
+/* Modal — Backdrop with blur, responsive bottom sheet on mobile */
+
+/* --- Backdrop --- */
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 1000;
+
+  /* Mobile default: align content to bottom */
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+
+  animation: backdropIn var(--transition-normal) var(--ease-out-quart) both;
+}
+
+@keyframes backdropIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* --- Panel (bottom sheet on mobile) --- */
+
+.panel {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+
+  width: 100%;
+  max-height: 90dvh;
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  /* Bottom sheet shape */
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  border-bottom: none;
+
+  /* Slide up animation */
+  animation: slideUp var(--transition-normal) var(--ease-out-quart) both;
+
+  /* Scroll behavior */
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+
+  /* Focus ring visible when focused programmatically */
+  outline: none;
+}
+
+.panel:focus-visible {
+  box-shadow: var(--shadow-focus);
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* --- Desktop: centered card --- */
+
+@media (min-width: 1024px) {
+  .backdrop {
+    align-items: center;
+  }
+
+  .panel {
+    width: 100%;
+    max-width: 480px;
+    max-height: 80vh;
+
+    /* Full card radius on desktop */
+    border-radius: var(--radius-xl);
+    border-bottom: 1px solid var(--color-border);
+
+    animation: fadeUp var(--transition-normal) var(--ease-out-quart) both;
+  }
+}
+
+@keyframes fadeUp {
+  from {
+    transform: translateY(12px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* --- Header --- */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+
+  padding: var(--space-6);
+  padding-bottom: var(--space-4);
+
+  border-bottom: 1px solid var(--color-border);
+
+  position: sticky;
+  top: 0;
+  background: var(--color-surface-2);
+  z-index: 1;
+}
+
+.title {
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  letter-spacing: var(--tracking-tight);
+  /* Override h2 default from globals */
+  font-size: var(--text-md);
+}
+
+/* Close button — minimal ghost style */
+.closeButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.closeButton:hover {
+  background: var(--color-surface-3);
+  color: var(--color-text-primary);
+}
+
+.closeButton:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-border-2);
+}
+
+/* --- Body --- */
+
+.body {
+  padding: var(--space-6);
+}
