@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useState, useEffect, createContext, useContext } from 'react'
 import type { User } from './types'
 import { api } from './lib/api'
+import LoginPage from './pages/LoginPage'
 
 interface AuthContextType {
   user: User | null
@@ -69,7 +70,7 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          <Route path="/login" element={<Placeholder title="Login" />} />
+          <Route path="/login" element={<LoginPage />} />
           <Route
             path="/"
             element={

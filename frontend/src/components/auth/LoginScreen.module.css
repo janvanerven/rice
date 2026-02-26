@@ -1,0 +1,154 @@
+/* LoginScreen — full-viewport centered login for Rice (旅) */
+
+.root {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: var(--space-6);
+}
+
+/* ----------------------------------------------------------------
+   Content block — no card, just centered content
+   Stagger child elements in via fade-up on mount
+---------------------------------------------------------------- */
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+  max-width: 320px;
+  gap: 0; /* spacing handled per-element for precise control */
+
+  animation: fade-up 500ms var(--ease-out-quart) both;
+}
+
+/* ----------------------------------------------------------------
+   Kanji mark — the hero glyph
+   Large, luminous, neon-primary. Staggered 0ms.
+---------------------------------------------------------------- */
+.mark {
+  font-family: 'Noto Sans JP', var(--font-sans);
+  font-size: 5rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--color-neon-primary);
+
+  /* Layered text glow: tight core + wide bloom */
+  text-shadow:
+    0 0 8px rgba(255, 107, 43, 0.9),
+    0 0 24px rgba(255, 107, 43, 0.55),
+    0 0 60px rgba(255, 107, 43, 0.25);
+
+  margin-bottom: var(--space-6);
+
+  /* Subtle breathing pulse on the glow — non-distracting */
+  animation:
+    fade-up 500ms var(--ease-out-quart) both,
+    kanji-breathe 4s ease-in-out 800ms infinite;
+}
+
+/* ----------------------------------------------------------------
+   Brand wordmark block — app name + tagline
+   Staggered 80ms after parent.
+---------------------------------------------------------------- */
+.wordmark {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-8);
+
+  animation: fade-up 500ms var(--ease-out-quart) 80ms both;
+}
+
+.appName {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  letter-spacing: var(--tracking-wider);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+}
+
+.tagline {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  color: var(--color-text-tertiary);
+  font-style: italic;
+  letter-spacing: 0.03em;
+}
+
+/* ----------------------------------------------------------------
+   Divider — constrained width, centered
+   Staggered 160ms.
+---------------------------------------------------------------- */
+.divider {
+  width: 100%;
+  max-width: 240px;
+  margin-bottom: var(--space-8);
+
+  animation: fade-up 500ms var(--ease-out-quart) 160ms both;
+}
+
+/* ----------------------------------------------------------------
+   Actions — sign-in button
+   Staggered 240ms.
+---------------------------------------------------------------- */
+.actions {
+  width: 100%;
+  animation: fade-up 500ms var(--ease-out-quart) 240ms both;
+}
+
+.signInButton {
+  width: 100%;
+  /* Neon pulse animation layered on the button's own box-shadow.
+     We override via animation — the button's hover/focus states
+     still win via the :hover/:focus selectors on the component. */
+  animation: neon-pulse 3s ease-in-out 1200ms infinite;
+}
+
+/* ----------------------------------------------------------------
+   Kanji breathing glow keyframes
+   Subtle: only the outer bloom pulses, core stays bright.
+---------------------------------------------------------------- */
+@keyframes kanji-breathe {
+  0%, 100% {
+    text-shadow:
+      0 0 8px rgba(255, 107, 43, 0.9),
+      0 0 24px rgba(255, 107, 43, 0.55),
+      0 0 60px rgba(255, 107, 43, 0.25);
+  }
+  50% {
+    text-shadow:
+      0 0 10px rgba(255, 107, 43, 1),
+      0 0 32px rgba(255, 107, 43, 0.7),
+      0 0 80px rgba(255, 107, 43, 0.4),
+      0 0 120px rgba(255, 107, 43, 0.15);
+  }
+}
+
+/* ----------------------------------------------------------------
+   Responsive — constrain layout a bit looser on very small screens
+---------------------------------------------------------------- */
+@media (max-width: 400px) {
+  .mark {
+    font-size: 4rem;
+  }
+}
+
+/* ----------------------------------------------------------------
+   Reduced motion — collapse all animations
+   (globals.css universal rule covers transitions,
+    but we ensure our custom keyframes are also killed)
+---------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .mark,
+  .wordmark,
+  .divider,
+  .actions,
+  .signInButton {
+    animation: none;
+  }
+}
