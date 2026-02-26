@@ -5,6 +5,7 @@ mod db;
 mod email;
 mod errors;
 mod extractors;
+mod middleware;
 mod models;
 
 use config::Config;
@@ -59,10 +60,16 @@ async fn main() {
         .await
         .expect("Failed to bind address");
 
+    let (xfo, xcto, xxss) = middleware::security_headers();
+
     let app = axum::Router::new()
         .route("/health", axum::routing::get(health))
         .merge(auth::router())
         .merge(api::router())
+        .layer(xfo)
+        .layer(xcto)
+        .layer(xxss)
+        .layer(tower_http::trace::TraceLayer::new_for_http())
         .with_state(state);
 
     axum::serve(listener, app).await.expect("Server failed");
