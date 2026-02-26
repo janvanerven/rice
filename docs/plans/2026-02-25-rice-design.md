@@ -163,8 +163,16 @@ trips 1──N trip_members
 ### Invite Flow
 1. Owner enters collaborator's email + role via API
 2. Server creates invite record with hashed single-use token, expires in 7 days
-3. When invited user logs in via Authentik with matching email, auto-claim pending invites
-4. User appears as trip member immediately
+3. Server sends invite email via SMTP with link to the app (e.g., `APP_BASE_URL/invite?token=...`)
+4. Recipient clicks link → redirected to Authentik login if not authenticated
+5. After authentication, if email matches, auto-claim the invite
+6. User appears as trip member immediately
+7. Fallback: pending invites also auto-claimed on any login with matching email
+
+### Deployment Context
+- Hosted behind a reverse proxy (TLS termination handled externally)
+- `secure` cookie flag still set (proxy forwards HTTPS)
+- SMTP available for transactional emails (invites, future notifications)
 
 ## SQLite Configuration
 
@@ -245,6 +253,11 @@ AUTHENTIK_CLIENT_ID=<client id>
 AUTHENTIK_CLIENT_SECRET=<client secret>
 AUTHENTIK_BASE_URL=https://auth.yourdomain.com
 APP_BASE_URL=https://rice.yourdomain.com
+SMTP_HOST=<smtp host>
+SMTP_PORT=587
+SMTP_USERNAME=<smtp user>
+SMTP_PASSWORD=<smtp password>
+SMTP_FROM=rice@yourdomain.com
 RUST_LOG=info
 ```
 
