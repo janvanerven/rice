@@ -16,7 +16,7 @@ CREATE TABLE trips (
     start_date TEXT,
     end_date TEXT,
     cover_image_path TEXT,
-    created_by TEXT NOT NULL REFERENCES users(id),
+    created_by TEXT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -24,7 +24,7 @@ CREATE TABLE trips (
 -- Trip members
 CREATE TABLE trip_members (
     trip_id TEXT NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
-    user_id TEXT NOT NULL REFERENCES users(id),
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     role TEXT NOT NULL CHECK (role IN ('owner', 'editor', 'viewer')),
     joined_at TEXT NOT NULL DEFAULT (datetime('now')),
     PRIMARY KEY (trip_id, user_id)
@@ -38,7 +38,7 @@ CREATE TABLE invites (
     token_hash TEXT NOT NULL,
     role TEXT NOT NULL CHECK (role IN ('editor', 'viewer')),
     expires_at TEXT NOT NULL,
-    claimed_by TEXT REFERENCES users(id),
+    claimed_by TEXT REFERENCES users(id) ON DELETE SET NULL,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -57,3 +57,4 @@ CREATE INDEX idx_invites_email ON invites(email);
 CREATE INDEX idx_invites_token ON invites(token_hash);
 CREATE INDEX idx_sessions_user ON sessions(user_id);
 CREATE INDEX idx_sessions_expires ON sessions(expires_at);
+CREATE UNIQUE INDEX idx_invites_unique_pending ON invites(email, trip_id) WHERE claimed_by IS NULL;
