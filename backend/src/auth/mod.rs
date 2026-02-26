@@ -6,7 +6,7 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Redirect, Response},
     routing::get,
-    Router,
+    Json, Router,
 };
 use cookie::{Cookie, SameSite};
 use rand::RngCore;
@@ -27,6 +27,13 @@ pub fn router() -> Router<AppState> {
         .route("/auth/login", get(login))
         .route("/auth/callback", get(callback))
         .route("/auth/logout", axum::routing::post(logout))
+        .route("/api/me", get(me))
+}
+
+async fn me(
+    crate::extractors::AuthUser(user): crate::extractors::AuthUser,
+) -> Json<crate::models::User> {
+    Json(user)
 }
 
 #[derive(serde::Deserialize)]

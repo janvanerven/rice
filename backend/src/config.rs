@@ -8,11 +8,11 @@ pub struct Config {
     pub authentik_client_secret: String,
     pub authentik_base_url: String,
     pub app_base_url: String,
-    pub smtp_host: String,
+    pub smtp_host: Option<String>,
     pub smtp_port: u16,
-    pub smtp_username: String,
-    pub smtp_password: String,
-    pub smtp_from: String,
+    pub smtp_username: Option<String>,
+    pub smtp_password: Option<String>,
+    pub smtp_from: Option<String>,
     pub host: String,
     pub port: u16,
 }
@@ -31,14 +31,14 @@ impl Config {
             authentik_client_secret: require_env("AUTHENTIK_CLIENT_SECRET")?,
             authentik_base_url: require_env("AUTHENTIK_BASE_URL")?,
             app_base_url: require_env("APP_BASE_URL")?,
-            smtp_host: require_env("SMTP_HOST")?,
+            smtp_host: env::var("SMTP_HOST").ok(),
             smtp_port: env::var("SMTP_PORT")
                 .unwrap_or_else(|_| "587".into())
                 .parse()
                 .map_err(|_| "SMTP_PORT must be a number".to_string())?,
-            smtp_username: require_env("SMTP_USERNAME")?,
-            smtp_password: require_env("SMTP_PASSWORD")?,
-            smtp_from: require_env("SMTP_FROM")?,
+            smtp_username: env::var("SMTP_USERNAME").ok(),
+            smtp_password: env::var("SMTP_PASSWORD").ok(),
+            smtp_from: env::var("SMTP_FROM").ok(),
             host: env::var("HOST").unwrap_or_else(|_| "0.0.0.0".into()),
             port: env::var("PORT")
                 .unwrap_or_else(|_| "3000".into())

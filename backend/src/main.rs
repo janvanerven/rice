@@ -2,6 +2,7 @@ mod api;
 mod auth;
 mod config;
 mod db;
+mod email;
 mod errors;
 mod extractors;
 mod models;
@@ -14,6 +15,7 @@ use std::sync::Arc;
 pub struct AppState {
     pub config: Config,
     pub db: Arc<DbPools>,
+    pub email: Option<Arc<email::EmailService>>,
 }
 
 #[tokio::main]
@@ -37,9 +39,18 @@ async fn main() {
             std::process::exit(1);
         });
 
+    let email_service = match email::EmailService::new(&config) {
+        Ok(svc) => Some(Arc::new(svc)),
+        Err(e) => {
+            tracing::warn!("Email service not available: {e}");
+            None
+        }
+    };
+
     let state = AppState {
         config: config.clone(),
         db: Arc::new(db),
+        email: email_service,
     };
 
     tracing::info!("Rice starting on {}:{}", config.host, config.port);
