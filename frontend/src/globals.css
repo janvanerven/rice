@@ -1,0 +1,225 @@
+/* RICE (旅) — Design System */
+
+/* --- Reset --- */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color-scheme: dark;
+}
+
+/* --- Scan Line Texture --- */
+html::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(255, 255, 255, 0.015) 2px,
+    rgba(255, 255, 255, 0.015) 3px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+body {
+  font-family: 'IBM Plex Sans', 'Noto Sans JP', system-ui, sans-serif;
+  background-color: var(--color-void);
+  color: var(--color-text-primary);
+  line-height: var(--leading-normal);
+  min-height: 100dvh;
+}
+
+/* --- Design Tokens --- */
+:root {
+  /* Backgrounds */
+  --color-void: #0a0a0f;
+  --color-surface: #0f0f18;
+  --color-surface-2: #141420;
+  --color-surface-3: #1c1c2e;
+  --color-border: #2a2a3d;
+  --color-border-2: #3d3d5c;
+
+  /* Neons */
+  --color-neon-primary: #ff6b2b;
+  --color-neon-red: #ff2d55;
+  --color-neon-pink: #ff0080;
+  --color-neon-amber: #ffb830;
+  --color-neon-cyan: #00d4ff;
+
+  /* Text */
+  --color-text-primary: #f0ede8;
+  --color-text-secondary: #9896a4;
+  --color-text-tertiary: #5c5a6e;
+  --color-text-inverse: #0a0a0f;
+
+  /* Glows */
+  --glow-primary: 0 0 20px rgba(255, 107, 43, 0.4);
+  --glow-pink: 0 0 20px rgba(255, 0, 128, 0.35);
+  --glow-cyan: 0 0 20px rgba(0, 212, 255, 0.3);
+  --glow-subtle: 0 0 12px rgba(255, 107, 43, 0.15);
+
+  /* Typography */
+  --font-sans: 'IBM Plex Sans', 'Noto Sans JP', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+
+  --text-xs: 0.64rem;
+  --text-sm: 0.8rem;
+  --text-base: 1rem;
+  --text-md: 1.25rem;
+  --text-lg: 1.563rem;
+  --text-xl: 1.953rem;
+  --text-2xl: 2.441rem;
+  --text-3xl: 3.052rem;
+
+  --leading-tight: 1.2;
+  --leading-normal: 1.5;
+  --leading-loose: 1.75;
+
+  --tracking-tight: -0.02em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.08em;
+  --tracking-wider: 0.15em;
+
+  /* Spacing (4px grid) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+
+  /* Border Radius */
+  --radius-sm: 3px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.3);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.6), 0 4px 8px rgba(0,0,0,0.4);
+  --shadow-neon-orange: 0 0 0 1px rgba(255,107,43,0.3), 0 0 24px rgba(255,107,43,0.2);
+  --shadow-neon-pink: 0 0 0 1px rgba(255,0,128,0.3), 0 0 24px rgba(255,0,128,0.15);
+  --shadow-focus: 0 0 0 2px rgba(255,107,43,0.5), inset 0 0 12px rgba(255,107,43,0.05);
+
+  /* Transitions */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-in-quart: cubic-bezier(0.5, 0, 0.75, 0);
+
+  /* Safe areas */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* --- Base Typography --- */
+h1, h2, h3, h4, h5, h6 {
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--leading-tight);
+  font-weight: 600;
+}
+
+h1 { font-size: var(--text-xl); }
+h2 { font-size: var(--text-lg); }
+h3 { font-size: var(--text-md); }
+
+@media (min-width: 1024px) {
+  h1 { font-size: var(--text-2xl); }
+  h2 { font-size: var(--text-xl); }
+}
+
+a {
+  color: var(--color-neon-cyan);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* --- HUD Label Style --- */
+.label-hud {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-text-secondary);
+}
+
+/* --- Animations --- */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes neon-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(255,107,43,0.3); }
+  50%       { box-shadow: 0 0 20px rgba(255,107,43,0.6), 0 0 40px rgba(255,107,43,0.2); }
+}
+
+@keyframes scanner {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+.page-enter {
+  animation: fade-up 300ms var(--ease-out-quart) both;
+}
+
+/* --- Loading Scanner --- */
+.loading-scanner::after {
+  content: '';
+  position: fixed;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--color-neon-primary), transparent);
+  animation: scanner 1.5s linear infinite;
+  pointer-events: none;
+  z-index: 10000;
+}
+
+/* --- Reduced Motion --- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  html::after { display: none; }
+}
+
+/* --- Scrollbar --- */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-void);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-2);
+  border-radius: var(--radius-full);
+}
+
+/* --- Selection --- */
+::selection {
+  background: rgba(255, 107, 43, 0.3);
+  color: var(--color-text-primary);
+}

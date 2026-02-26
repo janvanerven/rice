@@ -1,0 +1,44 @@
+export interface User {
+  id: string
+  email: string
+  display_name: string
+  avatar_url: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface Trip {
+  id: string
+  name: string
+  destination: string
+  start_date: string | null
+  end_date: string | null
+  cover_image_path: string | null
+  created_by: string
+  created_at: string
+  updated_at: string
+  role: string
+}
+
+export interface TripMember {
+  user_id: string
+  email: string
+  display_name: string
+  avatar_url: string | null
+  role: string
+  joined_at: string
+}
+
+export interface CreateTripRequest {
+  name: string
+  destination?: string
+  start_date?: string
+  end_date?: string
+}
+
+export interface UpdateTripRequest {
+  name?: string
+  destination?: string
+  start_date?: string
+  end_date?: string
+}
