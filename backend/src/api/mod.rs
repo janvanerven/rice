@@ -1,6 +1,7 @@
 pub mod invites;
 pub mod members;
 pub mod trips;
+pub mod uploads;
 
 use axum::{
     routing::{delete, get, post},
@@ -25,5 +26,9 @@ pub fn router() -> Router<AppState> {
         .route(
             "/api/trips/{trip_id}/invites",
             post(invites::create_invite),
+        )
+        .route(
+            "/api/trips/{trip_id}/cover",
+            post(uploads::upload_cover),
         )
 }

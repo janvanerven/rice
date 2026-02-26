@@ -61,5 +61,19 @@ export const api = {
       }),
   },
 
+  uploadCover: (tripId: string, file: File): Promise<{ path: string }> => {
+    const form = new FormData()
+    form.append('cover', file)
+    return fetch(`/api/trips/${tripId}/cover`, { method: 'POST', body: form })
+      .then(res => {
+        if (res.status === 401) {
+          window.location.href = '/auth/login'
+          throw new Error('Unauthorized')
+        }
+        if (!res.ok) throw new Error('Upload failed')
+        return res.json()
+      })
+  },
+
   logout: () => request<void>('/auth/logout', { method: 'POST' }),
 }

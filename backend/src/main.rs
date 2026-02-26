@@ -62,10 +62,14 @@ async fn main() {
 
     let (xfo, xcto, xxss) = middleware::security_headers();
 
+    let upload_dir =
+        std::env::var("UPLOAD_DIR").unwrap_or_else(|_| "/data/uploads".into());
+
     let app = axum::Router::new()
         .route("/health", axum::routing::get(health))
         .merge(auth::router())
         .merge(api::router())
+        .nest_service("/uploads", tower_http::services::ServeDir::new(&upload_dir))
         .layer(xfo)
         .layer(xcto)
         .layer(xxss)

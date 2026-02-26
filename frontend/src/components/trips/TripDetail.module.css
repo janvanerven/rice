@@ -98,6 +98,42 @@
   text-overflow: ellipsis;
 }
 
+/* Cover upload button — sits in bottom-right of hero */
+.coverUploadBtn {
+  position: absolute;
+  bottom: var(--space-4);
+  right: var(--space-4);
+  z-index: 2;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-text-secondary);
+  background: rgba(10, 10, 15, 0.7);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  padding: var(--space-1) var(--space-3);
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  transition: color 150ms ease, border-color 150ms ease;
+}
+
+.coverUploadBtn:hover:not(:disabled) {
+  color: var(--color-neon-primary);
+  border-color: var(--color-neon-primary);
+}
+
+.coverUploadBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Hidden file input */
+.hiddenInput {
+  display: none;
+}
+
 /* ---- Content area ---- */
 .content {
   padding: var(--space-6) var(--space-4) var(--space-10);

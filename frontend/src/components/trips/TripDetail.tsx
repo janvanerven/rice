@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button, Modal, GlowDivider } from '../ui'
 import { CollaboratorList } from './CollaboratorList'
@@ -33,15 +33,15 @@ function formatDateRange(start: string | null, end: string | null): string {
 
 export function TripDetail({ trip, members, onUpdate }: TripDetailProps) {
   const navigate = useNavigate()
-  const coverUrl = trip.cover_image_path
-    ? `/api/uploads/${trip.cover_image_path}`
-    : null
+  const coverUrl = trip.cover_image_path || null
 
   const canEdit = ['owner', 'editor'].includes(trip.role.toLowerCase())
   const isOwner = trip.role.toLowerCase() === 'owner'
 
   const [editOpen, setEditOpen] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
+  const [uploadingCover, setUploadingCover] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // ---- Edit handler ----
   const handleEdit = async (data: CreateTripRequest) => {
@@ -60,6 +60,24 @@ export function TripDetail({ trip, members, onUpdate }: TripDetailProps) {
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to delete trip')
       setDeleteLoading(false)
+    }
+  }
+
+  // ---- Cover upload handler ----
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploadingCover(true)
+    try {
+      await api.uploadCover(trip.id, file)
+      onUpdate()
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to upload cover image')
+    } finally {
+      setUploadingCover(false)
+      // Reset input so re-selecting same file triggers change
+      if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }
 
@@ -84,6 +102,26 @@ export function TripDetail({ trip, members, onUpdate }: TripDetailProps) {
             <span className={styles.heroBadgeChip}>{trip.destination}</span>
           )}
         </div>
+
+        {/* Cover upload button */}
+        {canEdit && (
+          <button
+            className={styles.coverUploadBtn}
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadingCover}
+            title="Change cover image"
+          >
+            {uploadingCover ? 'Uploading\u2026' : 'Change Cover'}
+          </button>
+        )}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          onChange={handleCoverUpload}
+          className={styles.hiddenInput}
+          aria-label="Upload cover image"
+        />
       </div>
 
       {/* ---- Main content ---- */}
