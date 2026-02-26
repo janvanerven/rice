@@ -7,7 +7,7 @@ COPY frontend/ .
 RUN npm run build
 
 # Stage 2: Build backend
-FROM rust:1.83-bookworm AS backend-builder
+FROM rust:1.88-bookworm AS backend-builder
 WORKDIR /app
 COPY backend/Cargo.toml backend/Cargo.lock ./backend/
 COPY backend/.sqlx ./backend/.sqlx
