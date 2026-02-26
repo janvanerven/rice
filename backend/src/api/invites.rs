@@ -26,11 +26,27 @@ pub async fn create_invite(
     .bind(&req.email)
     .fetch_one(&state.db.read)
     .await
-    .unwrap_or(false);
+    .map_err(|e| AppError::Internal(e.to_string()))?;
 
     if already_member {
         return Err(AppError::BadRequest(
             "User is already a member of this trip".into(),
+        ));
+    }
+
+    // Check for existing unclaimed invite
+    let existing_invite: bool = sqlx::query_scalar(
+        "SELECT COUNT(*) > 0 FROM invites WHERE trip_id = ?1 AND email = ?2 AND claimed_by IS NULL",
+    )
+    .bind(&access.trip_id)
+    .bind(&req.email)
+    .fetch_one(&state.db.read)
+    .await
+    .map_err(|e| AppError::Internal(e.to_string()))?;
+
+    if existing_invite {
+        return Err(AppError::BadRequest(
+            "An invite for this email is already pending".into(),
         ));
     }
 
@@ -43,6 +59,11 @@ pub async fn create_invite(
     let token_hash = hex::encode(Sha256::digest(token.as_bytes()));
     let expires_at = chrono::Utc::now() + chrono::TimeDelta::days(7);
     let id = ulid::Ulid::new().to_string();
+
+    let trip_name: String = sqlx::query_scalar("SELECT name FROM trips WHERE id = ?1")
+        .bind(&access.trip_id)
+        .fetch_one(&state.db.read)
+        .await?;
 
     sqlx::query(
         "INSERT INTO invites (id, trip_id, email, token_hash, role, expires_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
@@ -62,11 +83,6 @@ pub async fn create_invite(
         state.config.app_base_url.trim_end_matches('/'),
         token
     );
-
-    let trip_name: String = sqlx::query_scalar("SELECT name FROM trips WHERE id = ?1")
-        .bind(&access.trip_id)
-        .fetch_one(&state.db.read)
-        .await?;
 
     if let Some(ref email_service) = state.email {
         if let Err(e) = email_service

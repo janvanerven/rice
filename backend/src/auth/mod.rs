@@ -235,19 +235,27 @@ async fn claim_pending_invites(
 
     for invite in invites {
         let mut tx = state.db.write.begin().await?;
-        sqlx::query(
-            "INSERT OR IGNORE INTO trip_members (trip_id, user_id, role) VALUES (?1, ?2, ?3)",
+
+        // Atomically claim: only proceed if this UPDATE actually changes a row
+        let result = sqlx::query(
+            "UPDATE invites SET claimed_by = ?1 WHERE id = ?2 AND claimed_by IS NULL",
         )
-        .bind(&invite.trip_id)
         .bind(user_id)
-        .bind(&invite.role)
+        .bind(&invite.id)
         .execute(&mut *tx)
         .await?;
-        sqlx::query("UPDATE invites SET claimed_by = ?1 WHERE id = ?2")
+
+        if result.rows_affected() == 1 {
+            sqlx::query(
+                "INSERT OR IGNORE INTO trip_members (trip_id, user_id, role) VALUES (?1, ?2, ?3)",
+            )
+            .bind(&invite.trip_id)
             .bind(user_id)
-            .bind(&invite.id)
+            .bind(&invite.role)
             .execute(&mut *tx)
             .await?;
+        }
+
         tx.commit().await?;
     }
 
