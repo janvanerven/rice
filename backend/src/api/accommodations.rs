@@ -8,7 +8,7 @@ use serde::Deserialize;
 use crate::{
     errors::AppError,
     extractors::TripAccess,
-    models::{Accommodation, CreateAccommodationRequest, UpdateAccommodationRequest},
+    models::{Accommodation, AccommodationWithAttribution, Attribution, CreateAccommodationRequest, UpdateAccommodationRequest},
     AppState,
 };
 
@@ -21,7 +21,7 @@ pub struct AccommodationPath {
 pub async fn list_accommodations(
     State(state): State<AppState>,
     access: TripAccess,
-) -> Result<Json<Vec<Accommodation>>, AppError> {
+) -> Result<Json<Vec<AccommodationWithAttribution>>, AppError> {
     let rows: Vec<Accommodation> = sqlx::query_as(
         "SELECT * FROM accommodations WHERE trip_id = ?1 \
          ORDER BY check_in IS NULL ASC, check_in ASC, created_at ASC",
@@ -30,7 +30,39 @@ pub async fn list_accommodations(
     .fetch_all(&state.db.read)
     .await?;
 
-    Ok(Json(rows))
+    // Load attributions for all accommodations in this trip
+    let all_attrs: Vec<(String, String, String, String)> = sqlx::query_as(
+        "SELECT entity_id, author_name, author_url, source_url \
+         FROM image_attributions WHERE entity_type = 'accommodation' \
+         AND entity_id IN (SELECT id FROM accommodations WHERE trip_id = ?1)",
+    )
+    .bind(&access.trip_id)
+    .fetch_all(&state.db.read)
+    .await?;
+
+    let attr_map: std::collections::HashMap<String, Attribution> = all_attrs
+        .into_iter()
+        .map(|(id, name, url, source)| {
+            (id, Attribution {
+                author_name: name,
+                author_url: url,
+                source_url: source,
+            })
+        })
+        .collect();
+
+    let result = rows
+        .into_iter()
+        .map(|acc| {
+            let id = acc.id.clone();
+            AccommodationWithAttribution {
+                accommodation: acc,
+                attribution: attr_map.get(&id).cloned(),
+            }
+        })
+        .collect();
+
+    Ok(Json(result))
 }
 
 pub async fn create_accommodation(
@@ -212,6 +244,14 @@ pub async fn upload_accommodation_cover(
             "UPDATE accommodations SET cover_image_path = ?1, updated_at = datetime('now') WHERE id = ?2",
         )
         .bind(&relative_path)
+        .bind(&path.accommodation_id)
+        .execute(&state.db.write)
+        .await?;
+
+        // Remove auto-cover attribution if user uploaded their own
+        sqlx::query(
+            "DELETE FROM image_attributions WHERE entity_type = 'accommodation' AND entity_id = ?1",
+        )
         .bind(&path.accommodation_id)
         .execute(&state.db.write)
         .await?;

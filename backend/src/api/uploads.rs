@@ -67,6 +67,14 @@ pub async fn upload_cover(
         .execute(&state.db.write)
         .await?;
 
+        // Remove auto-cover attribution if user uploaded their own
+        sqlx::query(
+            "DELETE FROM image_attributions WHERE entity_type = 'trip' AND entity_id = ?1",
+        )
+        .bind(&access.trip_id)
+        .execute(&state.db.write)
+        .await?;
+
         return Ok(Json(serde_json::json!({ "path": relative_path })));
     }
 

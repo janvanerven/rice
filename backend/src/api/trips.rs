@@ -7,14 +7,14 @@ use axum::{
 use crate::{
     errors::AppError,
     extractors::{AuthUser, TripAccess},
-    models::{CreateTripRequest, Trip, TripWithRole, UpdateTripRequest},
+    models::{Attribution, CreateTripRequest, Trip, TripWithRoleAndAttribution, UpdateTripRequest},
     AppState,
 };
 
 pub async fn list_trips(
     State(state): State<AppState>,
     AuthUser(user): AuthUser,
-) -> Result<Json<Vec<TripWithRole>>, AppError> {
+) -> Result<Json<Vec<TripWithRoleAndAttribution>>, AppError> {
     let rows: Vec<(
         String,
         String,
@@ -38,21 +38,44 @@ pub async fn list_trips(
     .fetch_all(&state.db.read)
     .await?;
 
+    // Batch-load all trip attributions (small table, no dynamic SQL needed)
+    let all_attrs: Vec<(String, String, String, String)> = sqlx::query_as(
+        "SELECT entity_id, author_name, author_url, source_url \
+         FROM image_attributions WHERE entity_type = 'trip'",
+    )
+    .fetch_all(&state.db.read)
+    .await?;
+
+    let attr_map: std::collections::HashMap<String, Attribution> = all_attrs
+        .into_iter()
+        .map(|(id, name, url, source)| {
+            (id, Attribution {
+                author_name: name,
+                author_url: url,
+                source_url: source,
+            })
+        })
+        .collect();
+
     let trips = rows
         .into_iter()
-        .map(|row| TripWithRole {
-            trip: Trip {
-                id: row.0,
-                name: row.1,
-                destination: row.2,
-                start_date: row.3,
-                end_date: row.4,
-                cover_image_path: row.5,
-                created_by: row.6,
-                created_at: row.7,
-                updated_at: row.8,
-            },
-            role: row.9,
+        .map(|row| {
+            let id = row.0.clone();
+            TripWithRoleAndAttribution {
+                trip: Trip {
+                    id: row.0,
+                    name: row.1,
+                    destination: row.2,
+                    start_date: row.3,
+                    end_date: row.4,
+                    cover_image_path: row.5,
+                    created_by: row.6,
+                    created_at: row.7,
+                    updated_at: row.8,
+                },
+                role: row.9,
+                attribution: attr_map.get(&id).cloned(),
+            }
         })
         .collect();
 
@@ -108,15 +131,28 @@ pub async fn create_trip(
 pub async fn get_trip(
     State(state): State<AppState>,
     access: TripAccess,
-) -> Result<Json<TripWithRole>, AppError> {
+) -> Result<Json<TripWithRoleAndAttribution>, AppError> {
     let trip: Trip = sqlx::query_as("SELECT * FROM trips WHERE id = ?1")
         .bind(&access.trip_id)
         .fetch_one(&state.db.read)
         .await?;
 
-    Ok(Json(TripWithRole {
+    let attribution: Option<(String, String, String)> = sqlx::query_as(
+        "SELECT author_name, author_url, source_url FROM image_attributions \
+         WHERE entity_type = 'trip' AND entity_id = ?1",
+    )
+    .bind(&access.trip_id)
+    .fetch_optional(&state.db.read)
+    .await?;
+
+    Ok(Json(TripWithRoleAndAttribution {
         trip,
         role: access.role,
+        attribution: attribution.map(|(name, url, source)| Attribution {
+            author_name: name,
+            author_url: url,
+            source_url: source,
+        }),
     }))
 }
 

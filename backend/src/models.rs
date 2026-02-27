@@ -129,6 +129,21 @@ pub struct AutoCoverResponse {
     pub attribution: Attribution,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TripWithRoleAndAttribution {
+    #[serde(flatten)]
+    pub trip: Trip,
+    pub role: String,
+    pub attribution: Option<Attribution>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AccommodationWithAttribution {
+    #[serde(flatten)]
+    pub accommodation: Accommodation,
+    pub attribution: Option<Attribution>,
+}
+
 #[derive(Debug, Deserialize)]
 pub struct CreateAccommodationRequest {
     pub name: String,
