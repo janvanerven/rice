@@ -1,4 +1,5 @@
 pub mod accommodations;
+pub mod auto_cover;
 pub mod invites;
 pub mod members;
 pub mod trips;
@@ -33,6 +34,10 @@ pub fn router() -> Router<AppState> {
             post(uploads::upload_cover),
         )
         .route(
+            "/api/trips/{trip_id}/auto-cover",
+            post(auto_cover::auto_cover_trip),
+        )
+        .route(
             "/api/trips/{trip_id}/accommodations",
             get(accommodations::list_accommodations)
                 .post(accommodations::create_accommodation),
@@ -45,5 +50,9 @@ pub fn router() -> Router<AppState> {
         .route(
             "/api/trips/{trip_id}/accommodations/{accommodation_id}/cover",
             post(accommodations::upload_accommodation_cover),
+        )
+        .route(
+            "/api/trips/{trip_id}/accommodations/{accommodation_id}/auto-cover",
+            post(auto_cover::auto_cover_accommodation),
         )
 }
