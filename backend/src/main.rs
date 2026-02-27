@@ -7,6 +7,7 @@ mod errors;
 mod extractors;
 mod middleware;
 mod models;
+mod services;
 
 use axum::response::IntoResponse;
 use config::Config;
