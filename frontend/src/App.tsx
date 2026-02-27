@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
 import TripNewPage from './pages/TripNewPage'
 import TripDetailPage from './pages/TripDetailPage'
+import { AutoCoverProvider } from './components/AutoCoverContext'
 
 interface AuthContextType {
   user: User | null
@@ -64,6 +65,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <AutoCoverProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route
@@ -92,6 +94,7 @@ export default function App() {
           />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </AutoCoverProvider>
       </AuthProvider>
     </BrowserRouter>
   )

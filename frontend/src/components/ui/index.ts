@@ -15,3 +15,5 @@ export type { ModalProps } from './Modal/Modal'
 
 export { GlowDivider } from './GlowDivider/GlowDivider'
 export type { GlowDividerProps } from './GlowDivider/GlowDivider'
+
+export { Attribution } from './Attribution/Attribution'
