@@ -1,7 +1,9 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Badge } from '../ui'
+import { Badge, Attribution as AttributionOverlay } from '../ui'
 import type { BadgeVariant } from '../ui'
-import type { Trip } from '../../types'
+import type { Trip, Attribution } from '../../types'
+import { useAutoCover } from '../AutoCoverContext'
 import styles from './TripCard.module.css'
 
 interface TripCardProps {
@@ -41,16 +43,36 @@ function roleLabel(role: string): string {
 }
 
 export function TripCard({ trip }: TripCardProps) {
+  const { requestAutoCover } = useAutoCover()
+  const [coverPath, setCoverPath] = useState(trip.cover_image_path)
+  const [attribution, setAttribution] = useState<Attribution | null>(trip.attribution ?? null)
+  const [loading, setLoading] = useState(false)
+
   const dateRange = formatDateRange(trip.start_date, trip.end_date)
   const hasDates = trip.start_date || trip.end_date
-  const coverUrl = trip.cover_image_path
-    ? `/api/uploads/${trip.cover_image_path}`
-    : null
+  const coverUrl = coverPath ? `/api/uploads${coverPath}` : null
+  const canEdit = ['owner', 'editor'].includes(trip.role.toLowerCase())
+
+  useEffect(() => {
+    if (coverPath || !canEdit || !trip.destination?.trim()) return
+    setLoading(true)
+    requestAutoCover({
+      entityType: 'trip',
+      entityId: trip.id,
+      tripId: trip.id,
+      onSuccess: (result) => {
+        setCoverPath(result.path)
+        setAttribution(result.attribution)
+        setLoading(false)
+      },
+    })
+    const timeout = setTimeout(() => setLoading(false), 15000)
+    return () => clearTimeout(timeout)
+  }, [trip.id, coverPath, canEdit, trip.destination, requestAutoCover])
 
   return (
     <Link to={`/trips/${trip.id}`} className={styles.link} aria-label={`Open trip: ${trip.name}`}>
       <article className={styles.card}>
-        {/* Cover image area */}
         <div className={styles.cover}>
           {coverUrl ? (
             <img
@@ -58,16 +80,16 @@ export function TripCard({ trip }: TripCardProps) {
               alt={`Cover for ${trip.name}`}
               className={styles.coverImage}
             />
+          ) : loading ? (
+            <div className={`${styles.coverPlaceholder} cover-shimmer`} aria-hidden="true" />
           ) : (
             <div className={styles.coverPlaceholder} aria-hidden="true" />
           )}
-          {/* Gradient overlay — always present to ensure text legibility */}
           <div className={styles.coverOverlay} aria-hidden="true" />
-          {/* Trip name overlaid at bottom of cover */}
+          {attribution && coverUrl && <AttributionOverlay attribution={attribution} />}
           <h2 className={styles.tripName}>{trip.name}</h2>
         </div>
 
-        {/* Card body */}
         <div className={styles.body}>
           {trip.destination && (
             <p className={styles.destination}>{trip.destination}</p>

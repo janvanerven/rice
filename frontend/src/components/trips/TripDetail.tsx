@@ -1,11 +1,12 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Modal, GlowDivider } from '../ui'
+import { Button, Modal, GlowDivider, Attribution as AttributionOverlay } from '../ui'
 import { CollaboratorList } from './CollaboratorList'
 import { TripForm } from './TripForm'
 import { AccommodationList } from './AccommodationList'
-import type { Trip, TripMember, CreateTripRequest, Accommodation } from '../../types'
+import type { Trip, TripMember, CreateTripRequest, Accommodation, Attribution } from '../../types'
 import { api } from '../../lib/api'
+import { useAutoCover } from '../AutoCoverContext'
 import styles from './TripDetail.module.css'
 
 interface TripDetailProps {
@@ -35,10 +36,35 @@ function formatDateRange(start: string | null, end: string | null): string {
 
 export function TripDetail({ trip, members, accommodations, onUpdate }: TripDetailProps) {
   const navigate = useNavigate()
-  const coverUrl = trip.cover_image_path || null
+  const { requestAutoCover } = useAutoCover()
 
   const canEdit = ['owner', 'editor'].includes(trip.role.toLowerCase())
   const isOwner = trip.role.toLowerCase() === 'owner'
+
+  const [autoCoverPath, setAutoCoverPath] = useState<string | null>(null)
+  const [autoCoverAttribution, setAutoCoverAttribution] = useState<Attribution | null>(null)
+  const [autoCoverLoading, setAutoCoverLoading] = useState(false)
+
+  const effectiveCoverPath = trip.cover_image_path || autoCoverPath
+  const coverUrl = effectiveCoverPath ? `/api/uploads${effectiveCoverPath}` : null
+  const attribution = trip.attribution ?? autoCoverAttribution
+
+  useEffect(() => {
+    if (trip.cover_image_path || !canEdit || !trip.destination?.trim()) return
+    setAutoCoverLoading(true)
+    requestAutoCover({
+      entityType: 'trip',
+      entityId: trip.id,
+      tripId: trip.id,
+      onSuccess: (result) => {
+        setAutoCoverPath(result.path)
+        setAutoCoverAttribution(result.attribution)
+        setAutoCoverLoading(false)
+      },
+    })
+    const timeout = setTimeout(() => setAutoCoverLoading(false), 15000)
+    return () => clearTimeout(timeout)
+  }, [trip.id, trip.cover_image_path, canEdit, trip.destination, requestAutoCover])
 
   const [editOpen, setEditOpen] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
@@ -93,10 +119,14 @@ export function TripDetail({ trip, members, accommodations, onUpdate }: TripDeta
             alt={`Cover for ${trip.name}`}
             className={styles.heroImage}
           />
+        ) : autoCoverLoading ? (
+          <div className={`${styles.heroPlaceholder} cover-shimmer`} aria-hidden="true" />
         ) : (
           <div className={styles.heroPlaceholder} aria-hidden="true" />
         )}
         <div className={styles.heroOverlay} aria-hidden="true" />
+
+        {attribution && coverUrl && <AttributionOverlay attribution={attribution} />}
 
         {/* Badge chips overlaid on hero */}
         <div className={styles.heroBadges} aria-hidden="true">

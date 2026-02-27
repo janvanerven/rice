@@ -1,8 +1,9 @@
-import { useState, useRef } from 'react'
-import { Button, Modal } from '../ui'
+import { useEffect, useState, useRef } from 'react'
+import { Button, Modal, Attribution as AttributionOverlay } from '../ui'
 import { AccommodationForm } from './AccommodationForm'
-import type { Accommodation, CreateAccommodationRequest } from '../../types'
+import type { Accommodation, Attribution, CreateAccommodationRequest } from '../../types'
 import { api } from '../../lib/api'
+import { useAutoCover } from '../AutoCoverContext'
 import styles from './AccommodationList.module.css'
 
 interface AccommodationListProps {
@@ -23,6 +24,103 @@ function formatDateRange(checkIn: string | null, checkOut: string | null): strin
   if (checkIn && checkOut) return `${fmt(checkIn)} \u2192 ${fmt(checkOut)}`
   if (checkIn) return `From ${fmt(checkIn)}`
   return `Until ${fmt(checkOut!)}`
+}
+
+interface AccommodationCardProps {
+  acc: Accommodation
+  tripId: string
+  canEdit: boolean
+  uploadingId: string | null
+  deletingId: string | null
+  onCoverClick: (id: string) => void
+  onEdit: (id: string) => void
+  onDelete: (id: string, name: string) => void
+}
+
+function AccommodationCard({
+  acc, tripId, canEdit, uploadingId, deletingId,
+  onCoverClick, onEdit, onDelete,
+}: AccommodationCardProps) {
+  const { requestAutoCover } = useAutoCover()
+  const [coverPath, setCoverPath] = useState(acc.cover_image_path)
+  const [attribution, setAttribution] = useState<Attribution | null>(acc.attribution ?? null)
+  const [loading, setLoading] = useState(false)
+
+  const coverUrl = coverPath ? `/api/uploads${coverPath}` : null
+
+  useEffect(() => {
+    if (coverPath || !canEdit) return
+    setLoading(true)
+    requestAutoCover({
+      entityType: 'accommodation',
+      entityId: acc.id,
+      tripId,
+      onSuccess: (result) => {
+        setCoverPath(result.path)
+        setAttribution(result.attribution)
+        setLoading(false)
+      },
+    })
+    const timeout = setTimeout(() => setLoading(false), 15000)
+    return () => clearTimeout(timeout)
+  }, [acc.id, coverPath, canEdit, tripId, requestAutoCover])
+
+  return (
+    <li className={styles.card}>
+      <div className={styles.cardCover}>
+        {coverUrl ? (
+          <img
+            src={coverUrl}
+            alt={`Cover for ${acc.name}`}
+            className={styles.cardCoverImage}
+          />
+        ) : loading ? (
+          <div className={`${styles.cardCoverPlaceholder} cover-shimmer`} aria-hidden="true" />
+        ) : (
+          <div className={styles.cardCoverPlaceholder} aria-hidden="true" />
+        )}
+        <div className={styles.cardCoverOverlay} aria-hidden="true" />
+        {attribution && coverUrl && <AttributionOverlay attribution={attribution} />}
+        {canEdit && (
+          <button
+            className={styles.cardCoverBtn}
+            onClick={() => onCoverClick(acc.id)}
+            disabled={uploadingId === acc.id}
+            title="Change cover"
+            aria-label={uploadingId === acc.id ? `Uploading cover for ${acc.name}` : `Change cover for ${acc.name}`}
+          >
+            {uploadingId === acc.id ? '...' : '+'}
+          </button>
+        )}
+      </div>
+
+      <div className={styles.cardBody}>
+        <p className={styles.cardName}>{acc.name}</p>
+        {(acc.check_in || acc.check_out) && (
+          <p className={styles.cardDates}>
+            {formatDateRange(acc.check_in, acc.check_out)}
+          </p>
+        )}
+        {acc.address && <p className={styles.cardAddress}>{acc.address}</p>}
+        {acc.notes && <p className={styles.cardNotes}>{acc.notes}</p>}
+        {canEdit && (
+          <div className={styles.cardActions}>
+            <Button variant="ghost" size="sm" onClick={() => onEdit(acc.id)} aria-label={`Edit ${acc.name}`}>
+              Edit
+            </Button>
+            <Button
+              variant="ghost" size="sm"
+              onClick={() => onDelete(acc.id, acc.name)}
+              disabled={deletingId === acc.id}
+              aria-label={deletingId === acc.id ? `Deleting ${acc.name}` : `Delete ${acc.name}`}
+            >
+              {deletingId === acc.id ? '...' : 'Delete'}
+            </Button>
+          </div>
+        )}
+      </div>
+    </li>
+  )
 }
 
 export function AccommodationList({ tripId, accommodations, canEdit, onUpdate }: AccommodationListProps) {
@@ -104,78 +202,21 @@ export function AccommodationList({ tripId, accommodations, canEdit, onUpdate }:
       ) : (
         <ul className={styles.list}>
           {accommodations.map(acc => (
-            <li key={acc.id} className={styles.card}>
-              {/* Cover image area */}
-              <div className={styles.cardCover}>
-                {acc.cover_image_path ? (
-                  <img
-                    src={acc.cover_image_path}
-                    alt={`Cover for ${acc.name}`}
-                    className={styles.cardCoverImage}
-                  />
-                ) : (
-                  <div className={styles.cardCoverPlaceholder} aria-hidden="true" />
-                )}
-                <div className={styles.cardCoverOverlay} aria-hidden="true" />
-                {canEdit && (
-                  <button
-                    className={styles.cardCoverBtn}
-                    onClick={() => handleCoverClick(acc.id)}
-                    disabled={uploadingId === acc.id}
-                    title="Change cover"
-                    aria-label={uploadingId === acc.id ? `Uploading cover for ${acc.name}` : `Change cover for ${acc.name}`}
-                  >
-                    {uploadingId === acc.id ? '...' : '+'}
-                  </button>
-                )}
-              </div>
-
-              {/* Card body */}
-              <div className={styles.cardBody}>
-                <p className={styles.cardName}>{acc.name}</p>
-
-                {(acc.check_in || acc.check_out) && (
-                  <p className={styles.cardDates}>
-                    {formatDateRange(acc.check_in, acc.check_out)}
-                  </p>
-                )}
-
-                {acc.address && (
-                  <p className={styles.cardAddress}>{acc.address}</p>
-                )}
-
-                {acc.notes && (
-                  <p className={styles.cardNotes}>{acc.notes}</p>
-                )}
-
-                {canEdit && (
-                  <div className={styles.cardActions}>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setEditId(acc.id)}
-                      aria-label={`Edit ${acc.name}`}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(acc.id, acc.name)}
-                      disabled={deletingId === acc.id}
-                      aria-label={deletingId === acc.id ? `Deleting ${acc.name}` : `Delete ${acc.name}`}
-                    >
-                      {deletingId === acc.id ? '...' : 'Delete'}
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </li>
+            <AccommodationCard
+              key={acc.id}
+              acc={acc}
+              tripId={tripId}
+              canEdit={canEdit}
+              uploadingId={uploadingId}
+              deletingId={deletingId}
+              onCoverClick={handleCoverClick}
+              onEdit={(id) => setEditId(id)}
+              onDelete={handleDelete}
+            />
           ))}
         </ul>
       )}
 
-      {/* Hidden file input for cover upload */}
       <input
         ref={fileInputRef}
         type="file"
@@ -185,12 +226,10 @@ export function AccommodationList({ tripId, accommodations, canEdit, onUpdate }:
         aria-label="Upload accommodation cover"
       />
 
-      {/* Add modal */}
       <Modal open={addOpen} onClose={() => setAddOpen(false)} title="Add Accommodation">
         <AccommodationForm onSubmit={handleCreate} />
       </Modal>
 
-      {/* Edit modal */}
       <Modal open={!!editId} onClose={() => setEditId(null)} title="Edit Accommodation">
         {editingAccommodation && (
           <AccommodationForm
