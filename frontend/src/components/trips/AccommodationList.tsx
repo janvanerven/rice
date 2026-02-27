@@ -107,9 +107,9 @@ export function AccommodationList({ tripId, accommodations, canEdit, onUpdate }:
             <li key={acc.id} className={styles.card}>
               {/* Cover image area */}
               <div className={styles.cardCover}>
-                {acc.cover_image_url ? (
+                {acc.cover_image_path ? (
                   <img
-                    src={acc.cover_image_url}
+                    src={acc.cover_image_path}
                     alt={`Cover for ${acc.name}`}
                     className={styles.cardCoverImage}
                   />

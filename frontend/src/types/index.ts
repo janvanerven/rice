@@ -51,7 +51,7 @@ export interface Accommodation {
   check_in: string | null
   check_out: string | null
   notes: string | null
-  cover_image_url: string | null
+  cover_image_path: string | null
   created_at: string
   updated_at: string
 }
@@ -70,4 +70,15 @@ export interface UpdateAccommodationRequest {
   check_in?: string
   check_out?: string
   notes?: string
+}
+
+export interface Attribution {
+  author_name: string
+  author_url: string
+  source_url: string
+}
+
+export interface AutoCoverResponse {
+  path: string
+  attribution: Attribution
 }

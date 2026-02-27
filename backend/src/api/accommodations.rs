@@ -209,7 +209,7 @@ pub async fn upload_accommodation_cover(
         let relative_path = format!("/uploads/{}/{filename}", access.trip_id);
 
         sqlx::query(
-            "UPDATE accommodations SET cover_image_url = ?1, updated_at = datetime('now') WHERE id = ?2",
+            "UPDATE accommodations SET cover_image_path = ?1, updated_at = datetime('now') WHERE id = ?2",
         )
         .bind(&relative_path)
         .bind(&path.accommodation_id)

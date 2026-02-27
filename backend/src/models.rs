@@ -101,9 +101,32 @@ pub struct Accommodation {
     pub check_in: Option<String>,
     pub check_out: Option<String>,
     pub notes: Option<String>,
-    pub cover_image_url: Option<String>,
+    pub cover_image_path: Option<String>,
     pub created_at: String,
     pub updated_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct ImageAttribution {
+    pub entity_type: String,
+    pub entity_id: String,
+    pub author_name: String,
+    pub author_url: String,
+    pub source_url: String,
+    pub fetched_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Attribution {
+    pub author_name: String,
+    pub author_url: String,
+    pub source_url: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AutoCoverResponse {
+    pub path: String,
+    pub attribution: Attribution,
 }
 
 #[derive(Debug, Deserialize)]
