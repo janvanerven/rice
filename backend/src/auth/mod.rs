@@ -43,7 +43,8 @@ struct CallbackQuery {
 }
 
 async fn login(State(state): State<AppState>) -> Result<Redirect, AppError> {
-    let client = oauth::build_oauth_client(&state.config);
+    let client = oauth::build_oauth_client(&state.config)
+        .map_err(AppError::Internal)?;
     let (auth_url, csrf_token, pkce_verifier) = oauth::generate_auth_url(&client);
 
     {
@@ -68,7 +69,8 @@ async fn callback(
     .ok_or_else(|| AppError::BadRequest("Invalid or expired auth state".into()))?;
 
     // Exchange code for access token
-    let client = oauth::build_oauth_client(&state.config);
+    let client = oauth::build_oauth_client(&state.config)
+        .map_err(AppError::Internal)?;
     let access_token = oauth::exchange_code(&client, params.code, pkce_verifier)
         .await
         .map_err(AppError::Internal)?;

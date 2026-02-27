@@ -19,25 +19,22 @@ pub struct AuthentikUserInfo {
     pub picture: Option<String>,
 }
 
-pub fn build_oauth_client(config: &Config) -> ConfiguredClient {
-    let auth_url = format!(
-        "{}/application/o/authorize/",
-        config.authentik_base_url.trim_end_matches('/')
-    );
-    let token_url = format!(
-        "{}/application/o/token/",
-        config.authentik_base_url.trim_end_matches('/')
-    );
-    let redirect_url = format!(
-        "{}/auth/callback",
-        config.app_base_url.trim_end_matches('/')
-    );
+pub fn build_oauth_client(config: &Config) -> Result<ConfiguredClient, String> {
+    let base = config.authentik_base_url.trim_end_matches('/');
+    let app = config.app_base_url.trim_end_matches('/');
 
-    BasicClient::new(ClientId::new(config.authentik_client_id.clone()))
+    let auth_url = AuthUrl::new(format!("{base}/application/o/authorize/"))
+        .map_err(|e| format!("Invalid AUTHENTIK_BASE_URL: {e}"))?;
+    let token_url = TokenUrl::new(format!("{base}/application/o/token/"))
+        .map_err(|e| format!("Invalid AUTHENTIK_BASE_URL: {e}"))?;
+    let redirect_url = RedirectUrl::new(format!("{app}/auth/callback"))
+        .map_err(|e| format!("Invalid APP_BASE_URL: {e}"))?;
+
+    Ok(BasicClient::new(ClientId::new(config.authentik_client_id.clone()))
         .set_client_secret(ClientSecret::new(config.authentik_client_secret.clone()))
-        .set_auth_uri(AuthUrl::new(auth_url).expect("Invalid auth URL"))
-        .set_token_uri(TokenUrl::new(token_url).expect("Invalid token URL"))
-        .set_redirect_uri(RedirectUrl::new(redirect_url).expect("Invalid redirect URL"))
+        .set_auth_uri(auth_url)
+        .set_token_uri(token_url)
+        .set_redirect_uri(redirect_url))
 }
 
 pub fn generate_auth_url(client: &ConfiguredClient) -> (String, CsrfToken, PkceCodeVerifier) {
