@@ -14,6 +14,7 @@ pub struct Config {
     pub smtp_password: Option<String>,
     pub smtp_from: Option<String>,
     pub unsplash_access_key: Option<String>,
+    pub upload_dir: String,
     pub host: String,
     pub port: u16,
 }
@@ -41,6 +42,7 @@ impl Config {
             smtp_password: env::var("SMTP_PASSWORD").ok(),
             smtp_from: env::var("SMTP_FROM").ok(),
             unsplash_access_key: env::var("UNSPLASH_ACCESS_KEY").ok(),
+            upload_dir: env::var("UPLOAD_DIR").unwrap_or_else(|_| "/data/uploads".into()),
             host: env::var("HOST").unwrap_or_else(|_| "0.0.0.0".into()),
             port: env::var("PORT")
                 .unwrap_or_else(|_| "3000".into())

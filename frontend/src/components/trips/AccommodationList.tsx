@@ -46,7 +46,7 @@ function AccommodationCard({
   const [attribution, setAttribution] = useState<Attribution | null>(acc.attribution ?? null)
   const [loading, setLoading] = useState(false)
 
-  const coverUrl = coverPath ? `/api/uploads${coverPath}` : null
+  const coverUrl = coverPath ? `/uploads${coverPath}` : null
 
   useEffect(() => {
     if (coverPath || !canEdit) return

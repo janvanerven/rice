@@ -24,6 +24,7 @@ pub struct AppState {
     pub config: Config,
     pub db: Arc<DbPools>,
     pub email: Option<Arc<email::EmailService>>,
+    pub http_client: reqwest::Client,
 }
 
 #[tokio::main]
@@ -55,10 +56,16 @@ async fn main() {
         }
     };
 
+    let http_client = reqwest::Client::builder()
+        .redirect(reqwest::redirect::Policy::none())
+        .build()
+        .expect("Failed to build HTTP client");
+
     let state = AppState {
         config: config.clone(),
         db: Arc::new(db),
         email: email_service,
+        http_client,
     };
 
     tracing::info!("Rice starting on {}:{}", config.host, config.port);
@@ -69,14 +76,11 @@ async fn main() {
 
     let (xfo, xcto, xxss) = middleware::security_headers();
 
-    let upload_dir =
-        std::env::var("UPLOAD_DIR").unwrap_or_else(|_| "/data/uploads".into());
-
     let app = axum::Router::new()
         .route("/health", axum::routing::get(health))
         .merge(auth::router())
         .merge(api::router())
-        .nest_service("/uploads", tower_http::services::ServeDir::new(&upload_dir))
+        .nest_service("/uploads", tower_http::services::ServeDir::new(&config.upload_dir))
         .fallback(serve_frontend)
         .layer(xfo)
         .layer(xcto)

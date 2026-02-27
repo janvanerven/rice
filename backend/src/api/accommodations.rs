@@ -161,17 +161,28 @@ pub async fn delete_accommodation(
 ) -> Result<StatusCode, AppError> {
     access.require_editor()?;
 
+    let mut tx = state.db.write.begin().await?;
+
     let result = sqlx::query(
         "DELETE FROM accommodations WHERE id = ?1 AND trip_id = ?2",
     )
     .bind(&path.accommodation_id)
     .bind(&access.trip_id)
-    .execute(&state.db.write)
+    .execute(&mut *tx)
     .await?;
 
     if result.rows_affected() == 0 {
         return Err(AppError::NotFound("Accommodation not found".into()));
     }
+
+    sqlx::query(
+        "DELETE FROM image_attributions WHERE entity_type = 'accommodation' AND entity_id = ?1",
+    )
+    .bind(&path.accommodation_id)
+    .execute(&mut *tx)
+    .await?;
+
+    tx.commit().await?;
 
     Ok(StatusCode::NO_CONTENT)
 }
@@ -227,8 +238,7 @@ pub async fn upload_accommodation_cover(
         };
 
         let filename = format!("{}.{ext}", ulid::Ulid::new());
-        let upload_base = std::env::var("UPLOAD_DIR").unwrap_or_else(|_| "/data/uploads".into());
-        let dir = std::path::PathBuf::from(&upload_base).join(&access.trip_id);
+        let dir = std::path::PathBuf::from(&state.config.upload_dir).join(&access.trip_id);
         tokio::fs::create_dir_all(&dir)
             .await
             .map_err(|e| AppError::Internal(format!("Failed to create upload dir: {e}")))?;
@@ -238,7 +248,7 @@ pub async fn upload_accommodation_cover(
             .await
             .map_err(|e| AppError::Internal(format!("Failed to write file: {e}")))?;
 
-        let relative_path = format!("/uploads/{}/{filename}", access.trip_id);
+        let relative_path = format!("/{}/{filename}", access.trip_id);
 
         sqlx::query(
             "UPDATE accommodations SET cover_image_path = ?1, updated_at = datetime('now') WHERE id = ?2",

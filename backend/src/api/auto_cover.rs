@@ -24,7 +24,7 @@ pub async fn auto_cover_trip(
         .config
         .unsplash_access_key
         .as_deref()
-        .ok_or_else(|| AppError::Internal("Auto-cover service not configured".into()))?;
+        .ok_or_else(|| AppError::ServiceUnavailable("Auto-cover service not configured".into()))?;
 
     let trip: Trip = sqlx::query_as("SELECT * FROM trips WHERE id = ?1")
         .bind(&access.trip_id)
@@ -44,19 +44,18 @@ pub async fn auto_cover_trip(
         ));
     }
 
-    let client = reqwest::Client::new();
-    let photo = unsplash::search(&client, access_key, &query)
+    let client = &state.http_client;
+    let photo = unsplash::search(client, access_key, &query)
         .await
         .map_err(AppError::Internal)?
         .ok_or_else(|| AppError::NotFound("No matching image found".into()))?;
 
-    let upload_base = std::env::var("UPLOAD_DIR").unwrap_or_else(|_| "/data/uploads".into());
-    let dir = std::path::PathBuf::from(&upload_base).join(&access.trip_id);
-    let (tmp_path, filename) = unsplash::download(&client, &photo, &dir)
+    let dir = std::path::PathBuf::from(&state.config.upload_dir).join(&access.trip_id);
+    let (tmp_path, filename) = unsplash::download(client, &photo, &dir)
         .await
         .map_err(AppError::Internal)?;
 
-    let relative_path = format!("/uploads/{}/{filename}", access.trip_id);
+    let relative_path = format!("/{}/{filename}", access.trip_id);
 
     let mut tx = state.db.write.begin().await?;
 
@@ -91,7 +90,7 @@ pub async fn auto_cover_trip(
         tracing::error!("Failed to finalize auto-cover file: {e}");
     }
 
-    unsplash::track_download(client, access_key.to_string(), &photo);
+    unsplash::track_download(client.clone(), access_key.to_string(), &photo);
 
     Ok(Json(AutoCoverResponse {
         path: relative_path,
@@ -115,7 +114,7 @@ pub async fn auto_cover_accommodation(
         .config
         .unsplash_access_key
         .as_deref()
-        .ok_or_else(|| AppError::Internal("Auto-cover service not configured".into()))?;
+        .ok_or_else(|| AppError::ServiceUnavailable("Auto-cover service not configured".into()))?;
 
     let acc: Accommodation = sqlx::query_as(
         "SELECT * FROM accommodations WHERE id = ?1 AND trip_id = ?2",
@@ -139,7 +138,7 @@ pub async fn auto_cover_accommodation(
         .fetch_one(&state.db.read)
         .await?;
 
-    let client = reqwest::Client::new();
+    let client = &state.http_client;
     let queries = build_accommodation_queries(&acc, &trip);
     let mut photo = None;
 
@@ -147,7 +146,7 @@ pub async fn auto_cover_accommodation(
         if query.is_empty() {
             continue;
         }
-        match unsplash::search(&client, access_key, query).await {
+        match unsplash::search(client, access_key, query).await {
             Ok(Some(p)) => {
                 photo = Some(p);
                 break;
@@ -162,13 +161,12 @@ pub async fn auto_cover_accommodation(
 
     let photo = photo.ok_or_else(|| AppError::NotFound("No matching image found".into()))?;
 
-    let upload_base = std::env::var("UPLOAD_DIR").unwrap_or_else(|_| "/data/uploads".into());
-    let dir = std::path::PathBuf::from(&upload_base).join(&access.trip_id);
-    let (tmp_path, filename) = unsplash::download(&client, &photo, &dir)
+    let dir = std::path::PathBuf::from(&state.config.upload_dir).join(&access.trip_id);
+    let (tmp_path, filename) = unsplash::download(client, &photo, &dir)
         .await
         .map_err(AppError::Internal)?;
 
-    let relative_path = format!("/uploads/{}/{filename}", access.trip_id);
+    let relative_path = format!("/{}/{filename}", access.trip_id);
 
     let mut tx = state.db.write.begin().await?;
 
@@ -204,7 +202,7 @@ pub async fn auto_cover_accommodation(
         tracing::error!("Failed to finalize auto-cover file: {e}");
     }
 
-    unsplash::track_download(client, access_key.to_string(), &photo);
+    unsplash::track_download(client.clone(), access_key.to_string(), &photo);
 
     Ok(Json(AutoCoverResponse {
         path: relative_path,

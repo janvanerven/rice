@@ -50,7 +50,7 @@ export function TripCard({ trip }: TripCardProps) {
 
   const dateRange = formatDateRange(trip.start_date, trip.end_date)
   const hasDates = trip.start_date || trip.end_date
-  const coverUrl = coverPath ? `/api/uploads${coverPath}` : null
+  const coverUrl = coverPath ? `/uploads${coverPath}` : null
   const canEdit = ['owner', 'editor'].includes(trip.role.toLowerCase())
 
   useEffect(() => {

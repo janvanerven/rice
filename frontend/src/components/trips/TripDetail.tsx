@@ -46,7 +46,7 @@ export function TripDetail({ trip, members, accommodations, onUpdate }: TripDeta
   const [autoCoverLoading, setAutoCoverLoading] = useState(false)
 
   const effectiveCoverPath = trip.cover_image_path || autoCoverPath
-  const coverUrl = effectiveCoverPath ? `/api/uploads${effectiveCoverPath}` : null
+  const coverUrl = effectiveCoverPath ? `/uploads${effectiveCoverPath}` : null
   const attribution = trip.attribution ?? autoCoverAttribution
 
   useEffect(() => {

@@ -66,7 +66,7 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <AutoCoverProvider>
-        <Routes>
+          <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route
             path="/"
@@ -93,7 +93,7 @@ export default function App() {
             }
           />
           <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+          </Routes>
         </AutoCoverProvider>
       </AuthProvider>
     </BrowserRouter>

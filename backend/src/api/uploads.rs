@@ -46,8 +46,7 @@ pub async fn upload_cover(
         };
 
         let filename = format!("{}.{ext}", ulid::Ulid::new());
-        let upload_base = std::env::var("UPLOAD_DIR").unwrap_or_else(|_| "/data/uploads".into());
-        let dir = PathBuf::from(&upload_base).join(&access.trip_id);
+        let dir = PathBuf::from(&state.config.upload_dir).join(&access.trip_id);
         fs::create_dir_all(&dir)
             .await
             .map_err(|e| AppError::Internal(format!("Failed to create upload dir: {e}")))?;
@@ -57,7 +56,7 @@ pub async fn upload_cover(
             .await
             .map_err(|e| AppError::Internal(format!("Failed to write file: {e}")))?;
 
-        let relative_path = format!("/uploads/{}/{filename}", access.trip_id);
+        let relative_path = format!("/{}/{filename}", access.trip_id);
 
         sqlx::query(
             "UPDATE trips SET cover_image_path = ?1, updated_at = datetime('now') WHERE id = ?2",

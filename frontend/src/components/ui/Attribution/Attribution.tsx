@@ -27,6 +27,7 @@ export function Attribution({ attribution }: AttributionProps) {
           rel="noopener noreferrer"
           className={styles.link}
           onClick={(e) => e.stopPropagation()}
+          aria-label="Unsplash"
         >
           Unsplash
         </a>

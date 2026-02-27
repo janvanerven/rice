@@ -8,6 +8,7 @@ pub enum AppError {
     Unauthorized(String),
     Forbidden(String),
     BadRequest(String),
+    ServiceUnavailable(String),
     Internal(String),
 }
 
@@ -18,6 +19,7 @@ impl IntoResponse for AppError {
             AppError::Unauthorized(msg) => (StatusCode::UNAUTHORIZED, msg),
             AppError::Forbidden(msg) => (StatusCode::FORBIDDEN, msg),
             AppError::BadRequest(msg) => (StatusCode::BAD_REQUEST, msg),
+            AppError::ServiceUnavailable(msg) => (StatusCode::SERVICE_UNAVAILABLE, msg),
             AppError::Internal(msg) => {
                 tracing::error!("Internal error: {msg}");
                 (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error".into())

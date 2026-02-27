@@ -202,10 +202,25 @@ pub async fn delete_trip(
 ) -> Result<StatusCode, AppError> {
     access.require_owner()?;
 
+    let mut tx = state.db.write.begin().await?;
+
+    // Clean up attributions for the trip and its accommodations
+    sqlx::query(
+        "DELETE FROM image_attributions WHERE \
+         (entity_type = 'trip' AND entity_id = ?1) OR \
+         (entity_type = 'accommodation' AND entity_id IN \
+          (SELECT id FROM accommodations WHERE trip_id = ?1))",
+    )
+    .bind(&access.trip_id)
+    .execute(&mut *tx)
+    .await?;
+
     sqlx::query("DELETE FROM trips WHERE id = ?1")
         .bind(&access.trip_id)
-        .execute(&state.db.write)
+        .execute(&mut *tx)
         .await?;
+
+    tx.commit().await?;
 
     Ok(StatusCode::NO_CONTENT)
 }
