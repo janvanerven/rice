@@ -129,6 +129,7 @@ use axum::{
     http::StatusCode,
     Json,
 };
+use serde::Deserialize;
 
 use crate::{
     errors::AppError,
@@ -137,12 +138,19 @@ use crate::{
     AppState,
 };
 
+#[derive(Deserialize)]
+pub struct AccommodationPath {
+    pub trip_id: String,
+    pub accommodation_id: String,
+}
+
 pub async fn list_accommodations(
     State(state): State<AppState>,
     access: TripAccess,
 ) -> Result<Json<Vec<Accommodation>>, AppError> {
     let rows: Vec<Accommodation> = sqlx::query_as(
-        "SELECT * FROM accommodations WHERE trip_id = ?1 ORDER BY check_in ASC, created_at ASC",
+        "SELECT * FROM accommodations WHERE trip_id = ?1 \
+         ORDER BY check_in IS NULL ASC, check_in ASC, created_at ASC",
     )
     .bind(&access.trip_id)
     .fetch_all(&state.db.read)
@@ -192,28 +200,26 @@ pub async fn create_accommodation(
 pub async fn update_accommodation(
     State(state): State<AppState>,
     access: TripAccess,
-    Path(params): Path<std::collections::HashMap<String, String>>,
+    Path(path): Path<AccommodationPath>,
     Json(req): Json<UpdateAccommodationRequest>,
 ) -> Result<Json<Accommodation>, AppError> {
     access.require_editor()?;
 
-    let accommodation_id = params
-        .get("accommodation_id")
-        .ok_or_else(|| AppError::BadRequest("Missing accommodation_id".into()))?;
-
     let existing: Accommodation = sqlx::query_as(
         "SELECT * FROM accommodations WHERE id = ?1 AND trip_id = ?2",
     )
-    .bind(accommodation_id)
+    .bind(&path.accommodation_id)
     .bind(&access.trip_id)
     .fetch_optional(&state.db.read)
     .await?
     .ok_or_else(|| AppError::NotFound("Accommodation not found".into()))?;
 
     let name = req.name.unwrap_or(existing.name);
-    if name.trim().is_empty() {
+    let name = name.trim().to_string();
+    if name.is_empty() {
         return Err(AppError::BadRequest("Accommodation name cannot be empty".into()));
     }
+    // Note: None means "keep existing" — clients cannot clear optional fields to null
     let address = req.address.or(existing.address);
     let check_in = req.check_in.or(existing.check_in);
     let check_out = req.check_out.or(existing.check_out);
@@ -223,19 +229,19 @@ pub async fn update_accommodation(
         "UPDATE accommodations SET name = ?1, address = ?2, check_in = ?3, \
          check_out = ?4, notes = ?5, updated_at = datetime('now') WHERE id = ?6",
     )
-    .bind(name.trim())
+    .bind(&name)
     .bind(&address)
     .bind(&check_in)
     .bind(&check_out)
     .bind(&notes)
-    .bind(accommodation_id)
+    .bind(&path.accommodation_id)
     .execute(&state.db.write)
     .await?;
 
     let updated: Accommodation = sqlx::query_as(
         "SELECT * FROM accommodations WHERE id = ?1",
     )
-    .bind(accommodation_id)
+    .bind(&path.accommodation_id)
     .fetch_one(&state.db.read)
     .await?;
 
@@ -245,18 +251,14 @@ pub async fn update_accommodation(
 pub async fn delete_accommodation(
     State(state): State<AppState>,
     access: TripAccess,
-    Path(params): Path<std::collections::HashMap<String, String>>,
+    Path(path): Path<AccommodationPath>,
 ) -> Result<StatusCode, AppError> {
     access.require_editor()?;
-
-    let accommodation_id = params
-        .get("accommodation_id")
-        .ok_or_else(|| AppError::BadRequest("Missing accommodation_id".into()))?;
 
     let result = sqlx::query(
         "DELETE FROM accommodations WHERE id = ?1 AND trip_id = ?2",
     )
-    .bind(accommodation_id)
+    .bind(&path.accommodation_id)
     .bind(&access.trip_id)
     .execute(&state.db.write)
     .await?;
@@ -277,6 +279,15 @@ Add to the module declarations at the top of `backend/src/api/mod.rs`:
 pub mod accommodations;
 ```
 
+Add `put` to the existing routing import:
+
+```rust
+use axum::{
+    routing::{delete, get, post, put},
+    Router,
+};
+```
+
 Add to the `router()` function, after the existing `.route(...)` calls:
 
 ```rust
@@ -287,7 +298,7 @@ Add to the `router()` function, after the existing `.route(...)` calls:
         )
         .route(
             "/api/trips/{trip_id}/accommodations/{accommodation_id}",
-            axum::routing::put(accommodations::update_accommodation)
+            put(accommodations::update_accommodation)
                 .delete(accommodations::delete_accommodation),
         )
 ```
@@ -321,20 +332,16 @@ Append to `backend/src/api/accommodations.rs`:
 pub async fn upload_accommodation_cover(
     State(state): State<AppState>,
     access: TripAccess,
-    Path(params): Path<std::collections::HashMap<String, String>>,
+    Path(path): Path<AccommodationPath>,
     mut multipart: axum::extract::Multipart,
 ) -> Result<Json<serde_json::Value>, AppError> {
     access.require_editor()?;
-
-    let accommodation_id = params
-        .get("accommodation_id")
-        .ok_or_else(|| AppError::BadRequest("Missing accommodation_id".into()))?;
 
     // Verify accommodation belongs to this trip
     let _existing: Accommodation = sqlx::query_as(
         "SELECT * FROM accommodations WHERE id = ?1 AND trip_id = ?2",
     )
-    .bind(accommodation_id)
+    .bind(&path.accommodation_id)
     .bind(&access.trip_id)
     .fetch_optional(&state.db.read)
     .await?
@@ -390,7 +397,7 @@ pub async fn upload_accommodation_cover(
             "UPDATE accommodations SET cover_image_url = ?1, updated_at = datetime('now') WHERE id = ?2",
         )
         .bind(&relative_path)
-        .bind(accommodation_id)
+        .bind(&path.accommodation_id)
         .execute(&state.db.write)
         .await?;
 
@@ -488,20 +495,22 @@ Add to `frontend/src/lib/api.ts`, inside the `api` object (after the `invites` b
       }),
     delete: (tripId: string, id: string) =>
       request<void>(`/api/trips/${tripId}/accommodations/${id}`, { method: 'DELETE' }),
-    uploadCover: (tripId: string, id: string, file: File): Promise<{ path: string }> => {
+    uploadCover: async (tripId: string, id: string, file: File): Promise<{ path: string }> => {
       const form = new FormData()
       form.append('cover', file)
-      return fetch(`/api/trips/${tripId}/accommodations/${id}/cover`, {
+      const res = await fetch(`/api/trips/${tripId}/accommodations/${id}/cover`, {
         method: 'POST',
         body: form,
-      }).then(res => {
-        if (res.status === 401) {
-          window.location.href = '/auth/login'
-          throw new Error('Unauthorized')
-        }
-        if (!res.ok) throw new Error('Upload failed')
-        return res.json()
       })
+      if (res.status === 401) {
+        window.location.href = '/auth/login'
+        throw new ApiError(401, 'Unauthorized')
+      }
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ error: 'Upload failed' }))
+        throw new ApiError(res.status, body.error || 'Upload failed')
+      }
+      return res.json()
     },
   },
 ```
@@ -652,16 +661,18 @@ export function AccommodationForm({
         />
       </div>
 
-      <Input
-        label="Notes"
-        id="acc-notes"
-        type="text"
-        value={notes}
-        onChange={(e) => setNotes(e.target.value)}
-        placeholder="Free parking, late check-out confirmed"
-        autoComplete="off"
-        disabled={loading}
-      />
+      <div className={styles.textareaGroup}>
+        <label htmlFor="acc-notes" className={styles.textareaLabel}>Notes</label>
+        <textarea
+          id="acc-notes"
+          className={styles.textarea}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Free parking, late check-out confirmed"
+          rows={3}
+          disabled={loading}
+        />
+      </div>
 
       <div className={styles.actions}>
         <Button type="submit" variant="primary" size="md" disabled={loading}>
@@ -683,7 +694,9 @@ Create `frontend/src/components/trips/AccommodationForm.module.css`:
 .form {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-6);
+  max-width: 560px;
+  width: 100%;
 }
 
 .dateRow {
@@ -708,16 +721,61 @@ Create `frontend/src/components/trips/AccommodationForm.module.css`:
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-3) var(--space-4);
   background: rgba(255, 45, 85, 0.1);
   border: 1px solid rgba(255, 45, 85, 0.3);
   border-radius: var(--radius-md);
   color: var(--color-neon-red);
   font-size: var(--text-sm);
+  animation: fade-up 200ms var(--ease-out-quart) both;
 }
 
 .formErrorIcon {
   flex-shrink: 0;
+  font-size: var(--text-base);
+}
+
+/* Textarea styled to match Input component */
+.textareaGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.textareaLabel {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-text-secondary);
+}
+
+.textarea {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  resize: vertical;
+  min-height: 60px;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: var(--color-neon-primary);
+  box-shadow: 0 0 0 1px rgba(255, 107, 43, 0.3);
+}
+
+.textarea:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.textarea::placeholder {
+  color: var(--color-text-tertiary);
 }
 ```
 
@@ -835,12 +893,12 @@ export function AccommodationList({ tripId, accommodations, canEdit, onUpdate }:
   }
 
   return (
-    <section className={styles.section}>
+    <section className={styles.section} aria-label="Accommodations">
       <div className={styles.sectionHeader}>
-        <div className={styles.sectionTitle}>
+        <h3 className={styles.sectionTitle}>
           <span className={styles.sectionTitleLabel}>Accommodations</span>
           <span className={styles.itemCount}>{accommodations.length}</span>
-        </div>
+        </h3>
         {canEdit && (
           <Button variant="secondary" size="sm" onClick={() => setAddOpen(true)}>
             Add
@@ -871,15 +929,16 @@ export function AccommodationList({ tripId, accommodations, canEdit, onUpdate }:
                     className={styles.cardCoverBtn}
                     onClick={() => handleCoverClick(acc.id)}
                     disabled={uploadingId === acc.id}
+                    title="Change cover"
                   >
-                    {uploadingId === acc.id ? '…' : '📷'}
+                    {uploadingId === acc.id ? '...' : '+'}
                   </button>
                 )}
               </div>
 
               {/* Card body */}
               <div className={styles.cardBody}>
-                <h3 className={styles.cardName}>{acc.name}</h3>
+                <p className={styles.cardName}>{acc.name}</p>
 
                 {(acc.check_in || acc.check_out) && (
                   <p className={styles.cardDates}>
@@ -901,6 +960,7 @@ export function AccommodationList({ tripId, accommodations, canEdit, onUpdate }:
                       variant="ghost"
                       size="sm"
                       onClick={() => setEditId(acc.id)}
+                      aria-label={`Edit ${acc.name}`}
                     >
                       Edit
                     </Button>
@@ -909,8 +969,9 @@ export function AccommodationList({ tripId, accommodations, canEdit, onUpdate }:
                       size="sm"
                       onClick={() => handleDelete(acc.id, acc.name)}
                       disabled={deletingId === acc.id}
+                      aria-label={deletingId === acc.id ? `Deleting ${acc.name}` : `Delete ${acc.name}`}
                     >
-                      {deletingId === acc.id ? '…' : 'Delete'}
+                      {deletingId === acc.id ? '...' : 'Delete'}
                     </Button>
                   </div>
                 )}
@@ -979,6 +1040,7 @@ Create `frontend/src/components/trips/AccommodationList.module.css`:
   display: flex;
   align-items: center;
   gap: var(--space-3);
+  margin: 0;
 }
 
 .sectionTitleLabel {
@@ -1021,15 +1083,20 @@ Create `frontend/src/components/trips/AccommodationList.module.css`:
 .card {
   background: var(--color-surface-2);
   border: 1px solid var(--color-border);
+  border-left-width: 2px;
+  border-left-color: transparent;
   border-radius: var(--radius-lg);
   overflow: hidden;
   transition:
     border-color var(--transition-fast),
+    border-left-color var(--transition-fast),
     box-shadow var(--transition-fast);
 }
 
 .card:hover {
   border-color: var(--color-border-2);
+  border-left-color: var(--color-neon-primary);
+  box-shadow: var(--shadow-md);
 }
 
 /* Card cover area */
@@ -1047,6 +1114,12 @@ Create `frontend/src/components/trips/AccommodationList.module.css`:
   display: block;
   mix-blend-mode: luminosity;
   opacity: 0.85;
+  transition: opacity var(--transition-normal), transform var(--transition-slow);
+}
+
+.card:hover .cardCoverImage {
+  opacity: 1;
+  transform: scale(1.03);
 }
 
 .cardCoverPlaceholder {
@@ -1099,15 +1172,24 @@ Create `frontend/src/components/trips/AccommodationList.module.css`:
   display: flex;
   align-items: center;
   justify-content: center;
+  font-family: var(--font-mono);
   font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-text-secondary);
   cursor: pointer;
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
-  transition: border-color var(--transition-fast);
+  transition: border-color var(--transition-fast), color var(--transition-fast);
 }
 
 .cardCoverBtn:hover:not(:disabled) {
   border-color: var(--color-neon-primary);
+  color: var(--color-neon-primary);
+}
+
+.cardCoverBtn:focus-visible {
+  outline: 2px solid var(--color-neon-primary);
+  outline-offset: 2px;
 }
 
 .cardCoverBtn:disabled {
@@ -1120,7 +1202,7 @@ Create `frontend/src/components/trips/AccommodationList.module.css`:
   padding: var(--space-3) var(--space-4) var(--space-4);
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-2);
 }
 
 .cardName {
@@ -1148,13 +1230,11 @@ Create `frontend/src/components/trips/AccommodationList.module.css`:
   font-size: var(--text-sm);
   color: var(--color-text-tertiary);
   font-style: italic;
-  margin-top: var(--space-1);
 }
 
 .cardActions {
   display: flex;
   gap: var(--space-2);
-  margin-top: var(--space-2);
 }
 
 .hiddenInput {
@@ -1251,6 +1331,16 @@ Update the destructured props:
 export function TripDetail({ trip, members, accommodations, onUpdate }: TripDetailProps) {
 ```
 
+Add vertical spacing to `columnMain` in `TripDetail.module.css`:
+
+```css
+.columnMain {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+```
+
 Add the accommodations section in the `columnMain` div, after the `metaGrid` div:
 
 ```tsx
@@ -1294,7 +1384,7 @@ Append to `backend/tests/api_trips_test.rs`:
 
 ```rust
 #[tokio::test]
-async fn test_accommodation_crud() {
+async fn test_accommodation_crud_and_cascade() {
     let pool = common::test_db().await;
     let user_id = common::create_test_user(&pool, "test@example.com").await;
 
@@ -1316,7 +1406,7 @@ async fn test_accommodation_crud() {
         .await
         .unwrap();
 
-    // Create accommodation
+    // Create accommodation with all fields
     let acc_id = ulid::Ulid::new().to_string();
     sqlx::query(
         "INSERT INTO accommodations (id, trip_id, name, address, check_in, check_out) \
@@ -1332,17 +1422,37 @@ async fn test_accommodation_crud() {
     .await
     .unwrap();
 
-    // Verify it exists
-    let row: (String, String) =
-        sqlx::query_as("SELECT name, address FROM accommodations WHERE id = ?1")
+    // Verify it exists with correct types (address is Option<String>)
+    let acc: rice::models::Accommodation =
+        sqlx::query_as("SELECT * FROM accommodations WHERE id = ?1")
             .bind(&acc_id)
             .fetch_one(&pool)
             .await
             .unwrap();
-    assert_eq!(row.0, "Hotel Akira");
-    assert_eq!(row.1, "123 Neon St");
+    assert_eq!(acc.name, "Hotel Akira");
+    assert_eq!(acc.address.as_deref(), Some("123 Neon St"));
+    assert_eq!(acc.check_in.as_deref(), Some("2026-03-15"));
 
-    // Verify cascade delete
+    // Create accommodation without optional fields
+    let acc_id2 = ulid::Ulid::new().to_string();
+    sqlx::query("INSERT INTO accommodations (id, trip_id, name) VALUES (?1, ?2, ?3)")
+        .bind(&acc_id2)
+        .bind(&trip_id)
+        .bind("Hostel")
+        .execute(&pool)
+        .await
+        .unwrap();
+
+    let acc2: rice::models::Accommodation =
+        sqlx::query_as("SELECT * FROM accommodations WHERE id = ?1")
+            .bind(&acc_id2)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    assert!(acc2.address.is_none());
+    assert!(acc2.check_in.is_none());
+
+    // Verify cascade delete removes all accommodations
     sqlx::query("DELETE FROM trips WHERE id = ?1")
         .bind(&trip_id)
         .execute(&pool)
@@ -1357,7 +1467,59 @@ async fn test_accommodation_crud() {
             .unwrap();
     assert_eq!(count.0, 0, "Accommodations should cascade delete with trip");
 }
+
+#[tokio::test]
+async fn test_accommodation_cross_trip_isolation() {
+    let pool = common::test_db().await;
+    let user_id = common::create_test_user(&pool, "test@example.com").await;
+
+    // Create two trips
+    let trip_a = ulid::Ulid::new().to_string();
+    let trip_b = ulid::Ulid::new().to_string();
+    for trip_id in [&trip_a, &trip_b] {
+        sqlx::query("INSERT INTO trips (id, name, destination, created_by) VALUES (?1, ?2, ?3, ?4)")
+            .bind(trip_id)
+            .bind("Trip")
+            .bind("Place")
+            .bind(&user_id)
+            .execute(&pool)
+            .await
+            .unwrap();
+    }
+
+    // Create accommodation in trip A
+    let acc_id = ulid::Ulid::new().to_string();
+    sqlx::query("INSERT INTO accommodations (id, trip_id, name) VALUES (?1, ?2, ?3)")
+        .bind(&acc_id)
+        .bind(&trip_a)
+        .bind("Hotel A")
+        .execute(&pool)
+        .await
+        .unwrap();
+
+    // Verify it cannot be found via trip B (the WHERE trip_id = ? guard)
+    let cross_trip: Option<rice::models::Accommodation> =
+        sqlx::query_as("SELECT * FROM accommodations WHERE id = ?1 AND trip_id = ?2")
+            .bind(&acc_id)
+            .bind(&trip_b)
+            .fetch_optional(&pool)
+            .await
+            .unwrap();
+    assert!(cross_trip.is_none(), "Accommodation from trip A should not be accessible via trip B");
+
+    // Verify it CAN be found via its own trip
+    let same_trip: Option<rice::models::Accommodation> =
+        sqlx::query_as("SELECT * FROM accommodations WHERE id = ?1 AND trip_id = ?2")
+            .bind(&acc_id)
+            .bind(&trip_a)
+            .fetch_optional(&pool)
+            .await
+            .unwrap();
+    assert!(same_trip.is_some(), "Accommodation should be accessible via its own trip");
+}
 ```
+
+Note: These tests use `rice::models::Accommodation`, which requires the `Accommodation` struct to be public (it already is via `pub struct`). The binary crate name is `rice`, so `use rice::models::Accommodation` should work in integration tests. If the crate doesn't export it as a library, change to a tuple query: `sqlx::query_as::<_, (String, Option<String>, ...)>(...)` instead.
 
 **Step 2: Run tests**
 
