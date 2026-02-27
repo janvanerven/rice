@@ -3,13 +3,14 @@ import { useState, useEffect, useCallback } from 'react'
 import { AppShell, PageHeader } from '../components/layout'
 import { TripDetail } from '../components/trips/TripDetail'
 import { api } from '../lib/api'
-import type { Trip, TripMember } from '../types'
+import type { Trip, TripMember, Accommodation } from '../types'
 
 export default function TripDetailPage() {
   const { id } = useParams<{ id: string }>()
 
   const [trip, setTrip] = useState<Trip | null>(null)
   const [members, setMembers] = useState<TripMember[]>([])
+  const [accommodations, setAccommodations] = useState<Accommodation[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -17,13 +18,15 @@ export default function TripDetailPage() {
     if (!id) return
     setError(null)
     try {
-      // Fetch trip and members in parallel
-      const [fetchedTrip, fetchedMembers] = await Promise.all([
+      // Fetch trip, members, and accommodations in parallel
+      const [fetchedTrip, fetchedMembers, fetchedAccommodations] = await Promise.all([
         api.trips.get(id),
         api.members.list(id),
+        api.accommodations.list(id),
       ])
       setTrip(fetchedTrip)
       setMembers(fetchedMembers)
+      setAccommodations(fetchedAccommodations)
     } catch (err) {
       if (err instanceof Error && (err as { status?: number }).status === 404) {
         setError('Trip not found')
@@ -75,6 +78,7 @@ export default function TripDetailPage() {
       <TripDetail
         trip={trip}
         members={members}
+        accommodations={accommodations}
         onUpdate={fetchData}
       />
     </AppShell>

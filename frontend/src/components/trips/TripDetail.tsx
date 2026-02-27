@@ -3,13 +3,15 @@ import { useNavigate } from 'react-router-dom'
 import { Button, Modal, GlowDivider } from '../ui'
 import { CollaboratorList } from './CollaboratorList'
 import { TripForm } from './TripForm'
-import type { Trip, TripMember, CreateTripRequest } from '../../types'
+import { AccommodationList } from './AccommodationList'
+import type { Trip, TripMember, CreateTripRequest, Accommodation } from '../../types'
 import { api } from '../../lib/api'
 import styles from './TripDetail.module.css'
 
 interface TripDetailProps {
   trip: Trip
   members: TripMember[]
+  accommodations: Accommodation[]
   onUpdate: () => void
 }
 
@@ -31,7 +33,7 @@ function formatDateRange(start: string | null, end: string | null): string {
   return `Until ${fmt(end!)}`
 }
 
-export function TripDetail({ trip, members, onUpdate }: TripDetailProps) {
+export function TripDetail({ trip, members, accommodations, onUpdate }: TripDetailProps) {
   const navigate = useNavigate()
   const coverUrl = trip.cover_image_path || null
 
@@ -202,6 +204,13 @@ export function TripDetail({ trip, members, onUpdate }: TripDetailProps) {
                 </span>
               </div>
             </div>
+
+            <AccommodationList
+              tripId={trip.id}
+              accommodations={accommodations}
+              canEdit={canEdit}
+              onUpdate={onUpdate}
+            />
           </div>
 
           {/* Right column: collaborators */}

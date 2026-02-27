@@ -1,0 +1,88 @@
+/* AccommodationForm — reuses TripForm layout patterns */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-width: 560px;
+  width: 100%;
+}
+
+.dateRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+}
+
+@media (max-width: 480px) {
+  .dateRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: var(--space-2);
+}
+
+.formError {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: rgba(255, 45, 85, 0.1);
+  border: 1px solid rgba(255, 45, 85, 0.3);
+  border-radius: var(--radius-md);
+  color: var(--color-neon-red);
+  font-size: var(--text-sm);
+  animation: fade-up 200ms var(--ease-out-quart) both;
+}
+
+.formErrorIcon {
+  flex-shrink: 0;
+  font-size: var(--text-base);
+}
+
+/* Textarea styled to match Input component */
+.textareaGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.textareaLabel {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-text-secondary);
+}
+
+.textarea {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  resize: vertical;
+  min-height: 60px;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: var(--color-neon-primary);
+  box-shadow: 0 0 0 1px rgba(255, 107, 43, 0.3);
+}
+
+.textarea:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.textarea::placeholder {
+  color: var(--color-text-tertiary);
+}

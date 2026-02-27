@@ -42,3 +42,32 @@ export interface UpdateTripRequest {
   start_date?: string
   end_date?: string
 }
+
+export interface Accommodation {
+  id: string
+  trip_id: string
+  name: string
+  address: string | null
+  check_in: string | null
+  check_out: string | null
+  notes: string | null
+  cover_image_url: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateAccommodationRequest {
+  name: string
+  address?: string
+  check_in?: string
+  check_out?: string
+  notes?: string
+}
+
+export interface UpdateAccommodationRequest {
+  name?: string
+  address?: string
+  check_in?: string
+  check_out?: string
+  notes?: string
+}

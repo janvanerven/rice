@@ -1,10 +1,11 @@
+pub mod accommodations;
 pub mod invites;
 pub mod members;
 pub mod trips;
 pub mod uploads;
 
 use axum::{
-    routing::{delete, get, post},
+    routing::{delete, get, post, put},
     Router,
 };
 use crate::AppState;
@@ -30,5 +31,19 @@ pub fn router() -> Router<AppState> {
         .route(
             "/api/trips/{trip_id}/cover",
             post(uploads::upload_cover),
+        )
+        .route(
+            "/api/trips/{trip_id}/accommodations",
+            get(accommodations::list_accommodations)
+                .post(accommodations::create_accommodation),
+        )
+        .route(
+            "/api/trips/{trip_id}/accommodations/{accommodation_id}",
+            put(accommodations::update_accommodation)
+                .delete(accommodations::delete_accommodation),
+        )
+        .route(
+            "/api/trips/{trip_id}/accommodations/{accommodation_id}/cover",
+            post(accommodations::upload_accommodation_cover),
         )
 }

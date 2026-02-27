@@ -1,4 +1,4 @@
-import type { User, Trip, TripMember, CreateTripRequest, UpdateTripRequest } from '../types'
+import type { User, Trip, TripMember, CreateTripRequest, UpdateTripRequest, Accommodation, CreateAccommodationRequest, UpdateAccommodationRequest } from '../types'
 
 class ApiError extends Error {
   status: number
@@ -59,6 +59,40 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ email, role }),
       }),
+  },
+
+  accommodations: {
+    list: (tripId: string) =>
+      request<Accommodation[]>(`/api/trips/${tripId}/accommodations`),
+    create: (tripId: string, data: CreateAccommodationRequest) =>
+      request<Accommodation>(`/api/trips/${tripId}/accommodations`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    update: (tripId: string, id: string, data: UpdateAccommodationRequest) =>
+      request<Accommodation>(`/api/trips/${tripId}/accommodations/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+    delete: (tripId: string, id: string) =>
+      request<void>(`/api/trips/${tripId}/accommodations/${id}`, { method: 'DELETE' }),
+    uploadCover: async (tripId: string, id: string, file: File): Promise<{ path: string }> => {
+      const form = new FormData()
+      form.append('cover', file)
+      const res = await fetch(`/api/trips/${tripId}/accommodations/${id}/cover`, {
+        method: 'POST',
+        body: form,
+      })
+      if (res.status === 401) {
+        window.location.href = '/auth/login'
+        throw new ApiError(401, 'Unauthorized')
+      }
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ error: 'Upload failed' }))
+        throw new ApiError(res.status, body.error || 'Upload failed')
+      }
+      return res.json()
+    },
   },
 
   uploadCover: (tripId: string, file: File): Promise<{ path: string }> => {

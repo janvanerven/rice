@@ -91,3 +91,35 @@ pub struct MemberResponse {
     pub role: String,
     pub joined_at: String,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct Accommodation {
+    pub id: String,
+    pub trip_id: String,
+    pub name: String,
+    pub address: Option<String>,
+    pub check_in: Option<String>,
+    pub check_out: Option<String>,
+    pub notes: Option<String>,
+    pub cover_image_url: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CreateAccommodationRequest {
+    pub name: String,
+    pub address: Option<String>,
+    pub check_in: Option<String>,
+    pub check_out: Option<String>,
+    pub notes: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateAccommodationRequest {
+    pub name: Option<String>,
+    pub address: Option<String>,
+    pub check_in: Option<String>,
+    pub check_out: Option<String>,
+    pub notes: Option<String>,
+}
