@@ -18,6 +18,7 @@ export interface Trip {
   created_at: string
   updated_at: string
   role: string
+  attribution: Attribution | null
 }
 
 export interface TripMember {
@@ -54,6 +55,7 @@ export interface Accommodation {
   cover_image_path: string | null
   created_at: string
   updated_at: string
+  attribution: Attribution | null
 }
 
 export interface CreateAccommodationRequest {

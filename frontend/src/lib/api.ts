@@ -1,4 +1,4 @@
-import type { User, Trip, TripMember, CreateTripRequest, UpdateTripRequest, Accommodation, CreateAccommodationRequest, UpdateAccommodationRequest } from '../types'
+import type { User, Trip, TripMember, CreateTripRequest, UpdateTripRequest, Accommodation, CreateAccommodationRequest, UpdateAccommodationRequest, AutoCoverResponse } from '../types'
 
 class ApiError extends Error {
   status: number
@@ -45,6 +45,8 @@ export const api = {
       request<Trip>(`/api/trips/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id: string) =>
       request<void>(`/api/trips/${id}`, { method: 'DELETE' }),
+    autoCover: (tripId: string) =>
+      request<AutoCoverResponse>(`/api/trips/${tripId}/auto-cover`, { method: 'POST' }),
   },
 
   members: {
@@ -76,6 +78,8 @@ export const api = {
       }),
     delete: (tripId: string, id: string) =>
       request<void>(`/api/trips/${tripId}/accommodations/${id}`, { method: 'DELETE' }),
+    autoCover: (tripId: string, id: string) =>
+      request<AutoCoverResponse>(`/api/trips/${tripId}/accommodations/${id}/auto-cover`, { method: 'POST' }),
     uploadCover: async (tripId: string, id: string, file: File): Promise<{ path: string }> => {
       const form = new FormData()
       form.append('cover', file)
